@@ -1,0 +1,38 @@
+[Script Info]
+ScriptType: v4.00+
+PlayResX: 1080
+PlayResY: 1920
+WrapStyle: 2
+ScaledBorderAndShadow: yes
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Lede,LM Serif Light Italic,84,&H00F2F6FA,&H00F2F6FA,&H00000000,&H00000000,0,0,0,0,100,100,1,0,1,0,0,5,60,60,0,1
+Style: LedeShadow,LM Serif Light Italic,84,&HA0161A20,&HA0161A20,&H00000000,&H00000000,0,0,0,0,100,100,1,0,1,0,0,5,60,60,0,1
+Style: Mark,LM Serif Light,112,&H00F2F6FA,&H00F2F6FA,&H00000000,&H00000000,0,0,0,0,100,100,4,0,1,0,0,5,60,60,0,1
+Style: MarkShadow,LM Serif Light,112,&H90161A20,&H90161A20,&H00000000,&H00000000,0,0,0,0,100,100,4,0,1,0,0,5,60,60,0,1
+Style: Kicker,LM Sans,34,&H00F2F6FA,&H00F2F6FA,&H00000000,&H00000000,0,0,0,0,100,100,14,0,1,0,0,5,60,60,0,1
+Style: KickerShadow,LM Sans,34,&H60161A20,&H60161A20,&H00000000,&H00000000,0,0,0,0,100,100,14,0,1,0,0,5,60,60,0,1
+Style: EndMark,LM Serif Light,132,&H00343C46,&H00343C46,&H00000000,&H00000000,0,0,0,0,100,100,4,0,1,0,0,5,60,60,0,1
+Style: EndLine,LM Serif Light Italic,58,&H00505A66,&H00505A66,&H00000000,&H00000000,0,0,0,0,100,100,1,0,1,0,0,5,60,60,0,1
+Style: EndCta,LM Sans,32,&H00343C46,&H00343C46,&H00000000,&H00000000,0,0,0,0,100,100,12,0,1,0,0,5,60,60,0,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+; --- Opening line over the hook
+Dialogue: 0,0:00:00.35,0:00:03.30,LedeShadow,,0,0,0,,{\an5\pos(540,{LEDE_Y})\blur14\fad(700,500)}Simple moments,\Nbeautifully styled.
+Dialogue: 1,0:00:00.35,0:00:03.30,Lede,,0,0,0,,{\an5\pos(540,{LEDE_Y})\blur0.6\fad(700,500)}Simple moments,\Nbeautifully styled.
+; --- Brand introduced on the reveal
+Dialogue: 0,0:00:12.00,0:00:14.75,Kicker,,0,0,0,,{\an5\pos(540,{MARK_Y})\1c&H00100C0A&\1a&HA0&\blur90\fad(700,500)\p1}m -700 -260 l 700 -260 l 700 260 l -700 260{\p0}
+Dialogue: 0,0:00:18.60,0:00:22.00,Kicker,,0,0,0,,{\an5\pos(540,{CLOSE_Y})\1c&H00100C0A&\1a&HA0&\blur90\fad(700,500)\p1}m -700 -260 l 700 -260 l 700 260 l -700 260{\p0}
+Dialogue: 0,0:00:12.20,0:00:14.70,MarkShadow,,0,0,0,,{\an5\pos(540,{MARK_Y})\blur16\fad(800,600)}LamanMekar
+Dialogue: 1,0:00:12.20,0:00:14.70,Mark,,0,0,0,,{\an5\pos(540,{MARK_Y})\blur0.6\fad(800,600)}LamanMekar
+Dialogue: 0,0:00:12.60,0:00:14.70,KickerShadow,,0,0,0,,{\an5\pos(546,{KICK_Y})\blur10\fad(800,600)}EVENT STYLING
+Dialogue: 1,0:00:12.60,0:00:14.70,Kicker,,0,0,0,,{\an5\pos(546,{KICK_Y})\blur0.4\fad(800,600)}EVENT STYLING
+; --- Closing line over the final wide
+Dialogue: 0,0:00:18.80,0:00:21.90,LedeShadow,,0,0,0,,{\an5\pos(540,{CLOSE_Y})\blur14\fs70\fad(700,400)}Beautifully styled\Nfor your special moments.
+Dialogue: 1,0:00:18.80,0:00:21.90,Lede,,0,0,0,,{\an5\pos(540,{CLOSE_Y})\blur0.6\fs70\fad(700,400)}Beautifully styled\Nfor your special moments.
+; --- End card (ivory)
+Dialogue: 2,0:00:22.30,0:00:26.00,EndMark,,0,0,0,,{\an5\pos(540,900)\blur0.5\fad(700,0)}LamanMekar
+Dialogue: 2,0:00:22.90,0:00:26.00,EndLine,,0,0,0,,{\an7\pos(500,1000)\blur0.3\fad(700,0)\1c&H00A0AAB4&\p1}m 0 0 l 80 0 l 80 2 l 0 2{\p0}
+Dialogue: 2,0:00:23.10,0:00:26.00,EndCta,,0,0,0,,{\an5\pos(546,1070)\blur0.4\fad(700,0)}DM US FOR BOOKINGS
