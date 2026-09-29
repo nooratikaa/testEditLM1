@@ -1,0 +1,12 @@
+{
+  "name": "Meja HR",
+  "short_name": "Meja HR",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f3f4f8",
+  "theme_color": "#2f4aa0",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" },
+    { "src": "icon.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
