@@ -1,0 +1,971 @@
+<title>Meja HR</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: fixed left rail of HR modules + one working pane; rail becomes a scrolling tab strip on phones. */
+:root {
+  --bg: #f3f4f8;
+  --surface: #ffffff;
+  --sunk: #eceef5;
+  --ink: #1a1f2e;
+  --muted: #5b6275;
+  --line: #dde1ea;
+  --accent: #2f4aa0;       /* nila / indigo */
+  --accent-ink: #ffffff;
+  --accent-soft: #e5e9f8;
+  --kunyit: #c98f0c;       /* turmeric highlight */
+  --ok: #1d7f53;  --ok-soft: #ddf2e7;
+  --warn: #a8660b; --warn-soft: #fbeccf;
+  --bad: #b93a33; --bad-soft: #f9e0de;
+  --leave: #6a55c9; --leave-soft: #ebe6fb;
+  --off: #7c8396; --off-soft: #eceef3;
+  --shadow: 0 1px 2px rgba(20,25,45,.06), 0 6px 24px rgba(20,25,45,.07);
+  --f-body: "Plus Jakarta Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --r: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f121a; --surface: #171b26; --sunk: #1d2230; --ink: #e8ebf3; --muted: #9ba3b7; --line: #2a3142;
+    --accent: #8ea2f0; --accent-ink: #0f121a; --accent-soft: #232c4a; --kunyit: #e3b341;
+    --ok: #5cc794; --ok-soft: #173427; --warn: #e2a64a; --warn-soft: #3a2c14; --bad: #f08079; --bad-soft: #3d1e1d;
+    --leave: #ad9df5; --leave-soft: #2a2447; --off: #8b92a6; --off-soft: #222735;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f121a; --surface: #171b26; --sunk: #1d2230; --ink: #e8ebf3; --muted: #9ba3b7; --line: #2a3142;
+  --accent: #8ea2f0; --accent-ink: #0f121a; --accent-soft: #232c4a; --kunyit: #e3b341;
+  --ok: #5cc794; --ok-soft: #173427; --warn: #e2a64a; --warn-soft: #3a2c14; --bad: #f08079; --bad-soft: #3d1e1d;
+  --leave: #ad9df5; --leave-soft: #2a2447; --off: #8b92a6; --off-soft: #222735;
+  --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 14px; line-height: 1.5; }
+button, input, select, textarea { font: inherit; color: inherit; }
+.app { display: grid; grid-template-columns: 232px minmax(0,1fr); min-height: 100%; }
+.rail { background: var(--surface); border-right: 1px solid var(--line); padding: 20px 14px; display: flex; flex-direction: column; gap: 18px; position: sticky; top: env(safe-area-inset-top, 0px); height: 100vh; }
+.brand { display: flex; gap: 10px; align-items: center; padding: 0 6px; }
+.brand-mark { width: 34px; height: 34px; border-radius: 9px; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; font-weight: 800; letter-spacing: -.02em; }
+.brand b { display: block; font-size: 15px; letter-spacing: -.01em; }
+.brand small { display: block; color: var(--muted); font-size: 12px; max-width: 150px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nav { display: flex; flex-direction: column; gap: 2px; }
+.nav button { display: flex; align-items: center; gap: 10px; border: 0; background: none; padding: 9px 10px; border-radius: 8px; cursor: pointer; text-align: left; color: var(--muted); font-weight: 600; }
+.nav button:hover { background: var(--sunk); color: var(--ink); }
+.nav button[aria-current="page"] { background: var(--accent-soft); color: var(--accent); }
+.nav svg { width: 18px; height: 18px; flex: none; }
+.nav .count { margin-left: auto; background: var(--kunyit); color: var(--surface); border-radius: 99px; font-size: 11px; padding: 0 7px; font-weight: 700; }
+.rail-foot { margin-top: auto; font-size: 12px; color: var(--muted); padding: 0 6px; }
+.dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--off); margin-right: 6px; vertical-align: 1px; }
+.dot.live { background: var(--ok); }
+.dot.local { background: var(--kunyit); }
+
+main { padding: 28px clamp(16px, 3vw, 40px) 60px; min-width: 0; display: flex; flex-direction: column; gap: 22px; }
+.head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 20px; }
+.head h1 { margin: 0; font-size: 26px; letter-spacing: -.02em; line-height: 1.15; text-wrap: balance; }
+.head p { margin: 4px 0 0; color: var(--muted); }
+.tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.eyebrow { text-transform: uppercase; letter-spacing: .08em; font-size: 11px; font-weight: 700; color: var(--muted); }
+
+.btn { border: 1px solid var(--line); background: var(--surface); padding: 7px 13px; border-radius: 8px; cursor: pointer; font-weight: 600; white-space: nowrap; }
+.btn:hover { border-color: var(--muted); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn.ghost { background: none; border-color: transparent; color: var(--accent); padding-inline: 8px; }
+.btn.ghost:hover { background: var(--accent-soft); }
+.btn.danger { color: var(--bad); }
+.btn.danger.armed { background: var(--bad); color: var(--surface); border-color: var(--bad); }
+.btn.sm { padding: 4px 9px; font-size: 13px; }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.field label, .lbl { font-size: 12px; font-weight: 600; color: var(--muted); }
+input[type=text], input[type=number], input[type=date], input[type=time], input[type=email], input[type=tel], input[type=month], input[type=search], select, textarea {
+  border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 7px 10px; min-width: 0; width: 100%;
+}
+textarea { resize: vertical; min-height: 64px; }
+input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; }
+.grid3 { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 12px; }
+.span2 { grid-column: 1 / -1; }
+.check { display: flex; gap: 8px; align-items: center; font-weight: 500; }
+
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); min-width: 0; }
+.panel-h { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.panel-h h2 { margin: 0; font-size: 15px; letter-spacing: -.01em; }
+.panel-b { padding: 16px; }
+.cols { display: grid; grid-template-columns: minmax(0,1.5fr) minmax(0,1fr); gap: 18px; align-items: start; }
+
+.tiles { display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap: 12px; }
+.tile { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px; display: flex; flex-direction: column; gap: 2px; }
+.tile .v { font-size: 26px; font-weight: 800; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+.tile .v small { font-size: 14px; color: var(--muted); font-weight: 600; }
+.tile .k { font-size: 12px; color: var(--muted); font-weight: 600; }
+.tile.alert .v { color: var(--kunyit); }
+.meter { height: 5px; background: var(--sunk); border-radius: 9px; overflow: hidden; margin-top: 6px; }
+.meter i { display: block; height: 100%; background: var(--ok); border-radius: 9px; }
+
+.tbl-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 700; padding: 9px 12px; border-bottom: 1px solid var(--line); white-space: nowrap; background: var(--surface); }
+td { padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+tr:last-child td { border-bottom: 0; }
+td.num, th.num { text-align: right; }
+.mono { font-family: var(--f-mono); font-size: 13px; }
+.who { display: flex; align-items: center; gap: 10px; min-width: 220px; }
+.av { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-size: 11px; font-weight: 700; flex: none; background: var(--accent-soft); color: var(--accent); }
+.who b { display: block; font-weight: 600; line-height: 1.25; white-space: nowrap; }
+.who small { color: var(--muted); font-size: 12px; }
+.muted { color: var(--muted); }
+.row-actions { display: flex; gap: 6px; justify-content: flex-end; flex-wrap: nowrap; }
+tfoot td { font-weight: 700; border-top: 2px solid var(--line); }
+
+.chip { display: inline-flex; align-items: center; gap: 5px; border-radius: 99px; padding: 2px 9px; font-size: 12px; font-weight: 600; white-space: nowrap; background: var(--off-soft); color: var(--off); }
+.chip.ok { background: var(--ok-soft); color: var(--ok); }
+.chip.warn { background: var(--warn-soft); color: var(--warn); }
+.chip.bad { background: var(--bad-soft); color: var(--bad); }
+.chip.leave { background: var(--leave-soft); color: var(--leave); }
+.chip.pending { background: var(--accent-soft); color: var(--accent); }
+.tag { font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--kunyit); border: 1px solid currentColor; border-radius: 4px; padding: 0 4px; margin-left: 6px; vertical-align: 1px; }
+
+.seg { display: inline-flex; background: var(--sunk); border-radius: 9px; padding: 3px; gap: 2px; }
+.seg button { border: 0; background: none; padding: 5px 12px; border-radius: 7px; cursor: pointer; font-weight: 600; color: var(--muted); }
+.seg button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,.12); }
+
+/* Monthly register (buku kehadiran) */
+.reg { font-size: 12px; }
+.reg th, .reg td { padding: 6px 4px; text-align: center; }
+.reg th.name, .reg td.name { text-align: left; padding-left: 12px; position: sticky; left: 0; background: var(--surface); z-index: 1; min-width: 150px; }
+.reg th .dw { display: block; font-weight: 500; letter-spacing: 0; text-transform: none; font-size: 10px; }
+.reg th.we { color: var(--off); }
+.reg th.today { color: var(--accent); }
+.cell { display: inline-grid; place-items: center; width: 24px; height: 22px; border-radius: 5px; font-weight: 700; font-size: 10.5px; }
+.cell.ok { background: var(--ok-soft); color: var(--ok); }
+.cell.warn { background: var(--warn-soft); color: var(--warn); }
+.cell.bad { background: var(--bad-soft); color: var(--bad); }
+.cell.leave { background: var(--leave-soft); color: var(--leave); }
+.cell.off { color: var(--off); }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 12px; color: var(--muted); padding: 12px 16px; border-top: 1px solid var(--line); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+
+.list { display: flex; flex-direction: column; }
+.li { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.li:last-child { border-bottom: 0; }
+.li .grow { flex: 1 1 180px; min-width: 0; }
+.empty { padding: 28px 16px; text-align: center; color: var(--muted); }
+.empty b { display: block; color: var(--ink); font-size: 15px; margin-bottom: 4px; }
+.empty .btn { margin-top: 12px; }
+
+.banner { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; padding: 10px 14px; border-radius: var(--r); background: var(--warn-soft); color: var(--ink); border: 1px solid color-mix(in srgb, var(--kunyit) 35%, transparent); font-size: 13px; }
+.banner .grow { flex: 1 1 240px; }
+
+.clock { display: flex; flex-direction: column; gap: 4px; }
+.clock .t { font-family: var(--f-mono); font-size: 34px; font-weight: 500; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.bal { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 10px; }
+.bal div { background: var(--sunk); border-radius: 8px; padding: 8px 10px; }
+.bal b { display: block; font-size: 18px; font-variant-numeric: tabular-nums; }
+.bal small { color: var(--muted); font-size: 12px; }
+
+/* Modal */
+.scrim { position: fixed; inset: 0; background: rgba(10,14,25,.45); display: grid; place-items: center; padding: 16px; z-index: 50; }
+.modal { background: var(--surface); border-radius: 14px; box-shadow: var(--shadow); width: min(640px, 100%); max-height: calc(100% - 24px); overflow: auto; display: flex; flex-direction: column; }
+.modal.wide { width: min(760px, 100%); }
+.modal-h { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: var(--surface); z-index: 2; }
+.modal-h h3 { margin: 0; font-size: 17px; }
+.modal-b { padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; }
+.modal-f { display: flex; gap: 8px; justify-content: flex-end; padding: 14px 20px; border-top: 1px solid var(--line); flex-wrap: wrap; position: sticky; bottom: 0; background: var(--surface); }
+.modal-f .left { margin-right: auto; }
+.note { font-size: 12px; color: var(--muted); }
+.warnline { color: var(--warn); font-weight: 600; font-size: 13px; }
+
+/* Payslip */
+.slip { border: 1px solid var(--line); border-radius: 10px; padding: 18px; display: flex; flex-direction: column; gap: 14px; }
+.slip-top { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; border-bottom: 2px solid var(--ink); padding-bottom: 12px; }
+.slip-top h4 { margin: 0; font-size: 16px; }
+.slip dl { display: grid; grid-template-columns: auto 1fr; gap: 3px 14px; margin: 0; font-size: 13px; }
+.slip dt { color: var(--muted); }
+.slip dd { margin: 0; }
+.slip-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.slip table td { padding: 5px 0; border: 0; }
+.slip table td.num { text-align: right; }
+.slip .sum td { border-top: 1px solid var(--line); font-weight: 700; padding-top: 7px; }
+.net { display: flex; justify-content: space-between; align-items: baseline; background: var(--accent-soft); border-radius: 8px; padding: 12px 14px; }
+.net b { font-size: 22px; color: var(--accent); font-variant-numeric: tabular-nums; }
+
+.toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 9px 16px; border-radius: 9px; font-weight: 600; z-index: 60; box-shadow: var(--shadow); max-width: calc(100% - 32px); }
+
+@media (max-width: 1100px) { .tiles { grid-template-columns: repeat(3, minmax(0,1fr)); } .cols { grid-template-columns: minmax(0,1fr); } }
+@media (max-width: 760px) {
+  .app { grid-template-columns: minmax(0,1fr); }
+  .rail { position: sticky; top: env(safe-area-inset-top, 0px); height: auto; flex-direction: row; align-items: center; padding: 10px 12px; gap: 10px; border-right: 0; border-bottom: 1px solid var(--line); z-index: 10; }
+  .brand small, .brand b, .rail-foot { display: none; }
+  .nav { flex-direction: row; overflow-x: auto; scrollbar-width: none; }
+  .nav button { white-space: nowrap; padding: 7px 10px; }
+  main { padding-top: 20px; }
+  .tiles { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .grid2, .grid3, .slip-cols { grid-template-columns: minmax(0,1fr); }
+  .head h1 { font-size: 22px; }
+}
+@media (prefers-reduced-motion: no-preference) { .scrim { animation: fade .12s ease-out; } @keyframes fade { from { opacity: .4 } } }
+</style>
+
+<div class="app">
+  <aside class="rail">
+    <div class="brand"><div class="brand-mark" aria-hidden="true">HR</div><div><b>Meja HR</b><small id="brandCo">Memuatkan…</small></div></div>
+    <nav class="nav" id="nav" aria-label="Modul"></nav>
+    <div class="rail-foot" id="storeState"><span class="dot"></span>Menyambung…</div>
+  </aside>
+  <main id="main" aria-live="polite">
+    <div class="empty"><b>Memuatkan data HR…</b>Pekerja, kehadiran dan cuti akan dipaparkan di sini.</div>
+  </main>
+</div>
+<div id="modalRoot"></div>
+<div id="toastRoot"></div>
+
+<script>
+(() => {
+'use strict';
+
+/* ---------- helpers ---------- */
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const pad = n => String(n).padStart(2, '0');
+const toISO = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const parseISO = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
+const today = () => toISO(new Date());
+const nowHM = () => { const d = new Date(); return pad(d.getHours()) + ':' + pad(d.getMinutes()); };
+const addDays = (s, n) => { const d = parseISO(s); d.setDate(d.getDate() + n); return toISO(d); };
+const daysInMonth = ym => { const [y, m] = ym.split('-').map(Number); return new Date(y, m, 0).getDate(); };
+const monthDates = ym => Array.from({ length: daysInMonth(ym) }, (_, i) => `${ym}-${pad(i + 1)}`);
+const shiftMonth = (ym, n) => { const [y, m] = ym.split('-').map(Number); const d = new Date(y, m - 1 + n, 1); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}`; };
+const hm2min = t => { if (!t) return null; const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+const fmtDur = mins => mins == null || mins < 0 ? '—' : `${Math.floor(mins / 60)}j ${pad(mins % 60)}m`;
+const r2 = n => Math.round((n + Number.EPSILON) * 100) / 100;
+const money = n => (r2(n || 0)).toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const RM = n => 'RM ' + money(n);
+const MONTHS = ['Januari', 'Februari', 'Mac', 'April', 'Mei', 'Jun', 'Julai', 'Ogos', 'September', 'Oktober', 'November', 'Disember'];
+const DAYS = ['Ahad', 'Isnin', 'Selasa', 'Rabu', 'Khamis', 'Jumaat', 'Sabtu'];
+const fmtDate = s => { if (!s) return '—'; const d = parseISO(s); return `${d.getDate()} ${MONTHS[d.getMonth()].slice(0, 3)} ${d.getFullYear()}`; };
+const fmtDateLong = s => { const d = parseISO(s); return `${DAYS[d.getDay()]}, ${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`; };
+const fmtMonth = ym => { const [y, m] = ym.split('-').map(Number); return `${MONTHS[m - 1]} ${y}`; };
+const initials = n => String(n || '?').split(/\s+/).filter(w => !/^(bin|binti|a\/l|a\/p|@)$/i.test(w)).slice(0, 2).map(w => w[0]).join('').toUpperCase();
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const clone = o => JSON.parse(JSON.stringify(o ?? {}));
+
+const LEAVE = {
+  AL: { name: 'Cuti Tahunan', short: 'Tahunan' },
+  MC: { name: 'Cuti Sakit', short: 'Sakit' },
+  EL: { name: 'Cuti Kecemasan', short: 'Kecemasan' },
+  UL: { name: 'Cuti Tanpa Gaji', short: 'Tanpa gaji' },
+  ML: { name: 'Cuti Bersalin', short: 'Bersalin' },
+  PL: { name: 'Cuti Paterniti', short: 'Paterniti' },
+};
+const DEFAULT_SETTINGS = {
+  company: 'Syarikat Anda Sdn. Bhd.', start: '09:00', end: '18:00', grace: 10,
+  workdays: [1, 2, 3, 4, 5], elDays: 3, holidays: [],
+};
+
+/* ---------- state ---------- */
+const S = { employees: {}, leaves: {}, attendance: {}, payroll: {}, settings: { ...DEFAULT_SETTINGS }, loaded: {} };
+let UI = { view: 'dashboard', attTab: 'daily', date: today(), month: today().slice(0, 7), payMonth: today().slice(0, 7), q: '', showInactive: false, leaveFilter: 'Menunggu' };
+let DB = null, DL = null, MODE = 'loading', readOnly = false;
+try { const saved = JSON.parse(localStorage.getItem('mejahr.ui') || 'null'); if (saved && saved.view) UI.view = saved.view; } catch (e) {}
+const COLLS = ['employees', 'leaves', 'attendance', 'payroll'];
+const LOCAL_KEY = 'mejahr.data.v1';
+
+/* ---------- storage adapter: shared db when available, this browser otherwise ---------- */
+function loadLocal() {
+  try { const d = JSON.parse(localStorage.getItem(LOCAL_KEY) || 'null'); if (d) { COLLS.forEach(c => { S[c] = {}; Object.entries(d[c] || {}).forEach(([id, v]) => S[c][id] = { ...v, id }); }); S.settings = { ...DEFAULT_SETTINGS, ...(d.settings || {}) }; } } catch (e) {}
+  COLLS.forEach(c => S.loaded[c] = true); S.loaded.settings = true;
+}
+function saveLocal() {
+  try { localStorage.setItem(LOCAL_KEY, JSON.stringify({ employees: S.employees, leaves: S.leaves, attendance: S.attendance, payroll: S.payroll, settings: S.settings })); } catch (e) { toast('Pelayar ini tidak membenarkan simpanan setempat.'); }
+}
+function dbError(e) {
+  const code = e && e.code;
+  if (code === 'invalid_argument') { readOnly = true; return 'Anda hanya boleh melihat. Minta pemilik beri akses Contributor untuk menyimpan.'; }
+  if (code === 'quota_exceeded') return 'Storan penuh. Padam rekod lama (contohnya data contoh) dan cuba lagi.';
+  if (code === 'resource_exhausted') return 'Terlalu banyak perubahan serentak. Tunggu sebentar dan cuba lagi.';
+  return 'Tidak dapat menyimpan sekarang. Semak sambungan dan cuba lagi.';
+}
+async function run(p, okMsg) {
+  try { await p; if (okMsg) toast(okMsg); return true; }
+  catch (e) { toast(dbError(e)); render(); return false; }
+}
+function put(coll, id, data) {
+  if (DB) return DB.collection(coll).doc(id).set(data);
+  S[coll][id] = { ...clone(data), id }; saveLocal(); scheduleRender(); return Promise.resolve();
+}
+function remove(coll, id) {
+  if (DB) return DB.collection(coll).doc(id).delete();
+  delete S[coll][id]; saveLocal(); scheduleRender(); return Promise.resolve();
+}
+function putSettings(data) {
+  if (DB) return DB.doc('settings/company').set(data);
+  S.settings = { ...DEFAULT_SETTINGS, ...clone(data) }; saveLocal(); scheduleRender(); return Promise.resolve();
+}
+/* Attendance is one document per date; merge a single employee's record so two people clocking in at once don't overwrite each other. */
+function putAttendance(date, empId, rec) {
+  const cur = S.attendance[date];
+  if (DB) {
+    const ref = DB.doc('attendance/' + date);
+    if (cur && rec) return ref.update({ records: { [empId]: rec } });
+    const next = clone(cur || { date, records: {} }); delete next.id;
+    if (rec) next.records[empId] = rec; else delete next.records[empId];
+    if (!Object.keys(next.records).length) return ref.delete();
+    return ref.set(next);
+  }
+  const next = clone(cur || { date, records: {} });
+  if (rec) next.records[empId] = rec; else delete next.records[empId];
+  if (Object.keys(next.records).length) S.attendance[date] = { ...next, id: date }; else delete S.attendance[date];
+  saveLocal(); scheduleRender(); return Promise.resolve();
+}
+
+async function initStore() {
+  let db = null;
+  try { db = window.claude && window.claude.use ? await window.claude.use('db') : null; } catch (e) { db = null; }
+  try { DL = window.claude && window.claude.use ? await window.claude.use('downloads') : null; } catch (e) { DL = null; }
+  if (db) {
+    DB = db; MODE = 'db';
+    COLLS.forEach(c => {
+      db.collection(c).onSnapshot(snap => {
+        const o = {}; snap.docs.forEach(d => { o[d.id] = { ...d.data(), id: d.id }; });
+        S[c] = o; S.loaded[c] = true; scheduleRender();
+      }, () => { MODE = 'offline'; scheduleRender(); });
+    });
+    db.doc('settings/company').onSnapshot(d => {
+      S.settings = { ...DEFAULT_SETTINGS, ...(d.exists ? clone(d.data()) : {}) }; S.loaded.settings = true; scheduleRender();
+    }, () => { MODE = 'offline'; scheduleRender(); });
+  } else {
+    MODE = 'local'; loadLocal(); render();
+  }
+}
+
+/* ---------- domain rules ---------- */
+const emps = (all = false) => Object.values(S.employees)
+  .map(e => ({ ...e }))
+  .filter(e => all || e.status !== 'Berhenti')
+  .sort((a, b) => String(a.staffNo || '').localeCompare(String(b.staffNo || ''), 'en', { numeric: true }));
+const empById = id => S.employees[id];
+const holidayOn = d => (S.settings.holidays || []).find(h => h.date === d);
+const isWorkday = d => (S.settings.workdays || []).includes(parseISO(d).getDay()) && !holidayOn(d);
+function workdaysBetween(from, to) {
+  if (!from || !to || to < from) return 0;
+  let n = 0; for (let d = from; d <= to; d = addDays(d, 1)) if (isWorkday(d)) n++;
+  return n;
+}
+function leaveDays(l) { return l.half && l.from === l.to ? (isWorkday(l.from) ? 0.5 : 0) : workdaysBetween(l.from, l.to); }
+function serviceYears(join, asOf) {
+  if (!join) return 0; const a = parseISO(join), b = parseISO(asOf);
+  let y = b.getFullYear() - a.getFullYear(); if (b.getMonth() < a.getMonth() || (b.getMonth() === a.getMonth() && b.getDate() < a.getDate())) y--;
+  return Math.max(0, y);
+}
+/* Akta Kerja 1955: s.60E cuti tahunan 8/12/16 hari, s.60F cuti sakit 14/18/22 hari (<2, 2–5, ≥5 tahun khidmat). */
+function entitlement(emp, type, year) {
+  const yearEnd = `${year}-12-31`, t = today();
+  const yrs = serviceYears(emp.joinDate, yearEnd < t ? yearEnd : t);
+  if (type === 'AL') return emp.alDays !== '' && emp.alDays != null ? Number(emp.alDays) : (yrs < 2 ? 8 : yrs < 5 ? 12 : 16);
+  if (type === 'MC') return yrs < 2 ? 14 : yrs < 5 ? 18 : 22;
+  if (type === 'EL') return Number(S.settings.elDays) || 0;
+  if (type === 'ML') return 98;
+  if (type === 'PL') return 7;
+  return null;
+}
+function leaveUsed(empId, type, year, statuses = ['Diluluskan']) {
+  return Object.values(S.leaves).filter(l => l.empId === empId && l.type === type && statuses.includes(l.status) && l.from.slice(0, 4) === String(year)).reduce((s, l) => s + (Number(l.days) || 0), 0);
+}
+function leaveOn(empId, date) {
+  return Object.values(S.leaves).find(l => l.empId === empId && l.status === 'Diluluskan' && l.from <= date && l.to >= date && isWorkday(date));
+}
+const recOf = (empId, date) => S.attendance[date]?.records?.[empId];
+function isLate(rec) { return rec && rec.in && hm2min(rec.in) > hm2min(S.settings.start) + (Number(S.settings.grace) || 0); }
+function dayStatus(emp, date) {
+  const t = today();
+  if (emp.joinDate && date < emp.joinDate) return { code: '', label: 'Belum mula', cls: '' };
+  if (emp.endDate && date > emp.endDate) return { code: '', label: 'Telah berhenti', cls: '' };
+  const rec = recOf(emp.id, date);
+  if (rec && rec.in) return isLate(rec) ? { code: 'L', label: 'Lewat', cls: 'warn' } : { code: 'H', label: 'Hadir', cls: 'ok' };
+  const lv = leaveOn(emp.id, date);
+  if (lv) return { code: 'C', label: LEAVE[lv.type]?.name || 'Cuti', cls: 'leave' };
+  const hol = holidayOn(date);
+  if (hol) return { code: 'CU', label: hol.name, cls: 'off' };
+  if (!isWorkday(date)) return { code: '·', label: 'Hari rehat', cls: 'off' };
+  if (date > t) return { code: '', label: '—', cls: '' };
+  if (date === t && hm2min(nowHM()) < hm2min(S.settings.end)) return { code: '', label: 'Belum masuk', cls: 'pending' };
+  return { code: 'TH', label: 'Tidak hadir', cls: 'bad' };
+}
+function workedMins(rec) { if (!rec || !rec.in || !rec.out) return null; return hm2min(rec.out) - hm2min(rec.in); }
+function monthSummary(emp, ym) {
+  const s = { H: 0, L: 0, TH: 0, C: 0, mins: 0 };
+  monthDates(ym).forEach(d => { const st = dayStatus(emp, d); if (st.code === 'H') s.H++; else if (st.code === 'L') { s.L++; } else if (st.code === 'TH') s.TH++; else if (st.code === 'C') s.C++; const w = workedMins(recOf(emp.id, d)); if (w > 0) s.mins += w; });
+  return s;
+}
+
+/* Gaji: kadar peratusan anggaran. KWSP 11% pekerja; majikan 13% (gaji ≤ RM5,000) atau 12%.
+   PERKESO 0.5% / 1.75% dan SIP 0.2% / 0.2% atas gaji hingga siling RM6,000. PCB dimasukkan manual. */
+function payEmployees(ym) {
+  const start = ym + '-01', end = ym + '-' + pad(daysInMonth(ym));
+  return emps(true).filter(e => (!e.joinDate || e.joinDate <= end) && (!e.endDate || e.endDate >= start) && (e.status !== 'Berhenti' || (e.endDate && e.endDate >= start)));
+}
+function unpaidDays(empId, ym) {
+  const start = ym + '-01', end = ym + '-' + pad(daysInMonth(ym));
+  return Object.values(S.leaves).filter(l => l.empId === empId && l.type === 'UL' && l.status === 'Diluluskan' && l.to >= start && l.from <= end)
+    .reduce((s, l) => s + (l.half && l.from === l.to ? 0.5 : workdaysBetween(l.from < start ? start : l.from, l.to > end ? end : l.to)), 0);
+}
+function computePay(emp, ym, inp = {}) {
+  const basic = Number(emp.salary) || 0, allowance = Number(emp.allowance) || 0;
+  const otherAllow = Number(inp.otherAllow) || 0, otherDeduct = Number(inp.otherDeduct) || 0, pcb = Number(inp.pcb) || 0, ot = Number(inp.ot) || 0;
+  const ul = unpaidDays(emp.id, ym);
+  const ulDeduct = r2(basic / 26 * ul);
+  const gross = r2(basic + allowance + otherAllow + ot - ulDeduct);
+  const epfOn = emp.epf === false ? 0 : gross;
+  const epfEe = Math.ceil(epfOn * 0.11);
+  const epfEr = Math.ceil(epfOn * (gross <= 5000 ? 0.13 : 0.12));
+  const capped = Math.min(gross, 6000);
+  const socsoEe = r2(capped * 0.005), socsoEr = r2(capped * 0.0175);
+  const eisEe = r2(capped * 0.002), eisEr = r2(capped * 0.002);
+  const totalDeduct = r2(epfEe + socsoEe + eisEe + pcb + otherDeduct);
+  return { empId: emp.id, basic, allowance, otherAllow, ot, ul, ulDeduct, gross, epfEe, epfEr, socsoEe, socsoEr, eisEe, eisEr, pcb, otherDeduct, totalDeduct, net: r2(gross - totalDeduct) };
+}
+function payLines(ym) {
+  const doc = S.payroll[ym];
+  if (doc && doc.status === 'Muktamad' && doc.lines) return Object.values(doc.lines).map(l => ({ ...l, emp: empById(l.empId) || l.emp })).sort((a, b) => String(a.emp?.staffNo).localeCompare(String(b.emp?.staffNo), 'en', { numeric: true }));
+  const inputs = doc?.inputs || {};
+  return payEmployees(ym).map(e => ({ ...computePay(e, ym, inputs[e.id] || {}), emp: e }));
+}
+
+/* ---------- rendering ---------- */
+const ICONS = {
+  dashboard: '<path d="M3 13h8V3H3zM13 21h8V11h-8zM3 21h8v-6H3zM13 3v6h8V3z"/>',
+  attendance: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  employees: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.7 2 6.5 5.5"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18.5 14.8c1.7.8 2.7 2.6 3 5.2"/>',
+  leave: '<rect x="3" y="4.5" width="18" height="16" rx="2"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4M9 15l2 2 4-4"/>',
+  payroll: '<rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 9.5v5M18 9.5v5"/>',
+  settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
+};
+const VIEWS = [
+  ['dashboard', 'Papan Utama'], ['attendance', 'Kehadiran'], ['employees', 'Pekerja'], ['leave', 'Cuti'], ['payroll', 'Gaji'], ['settings', 'Tetapan'],
+];
+function renderNav() {
+  const pending = Object.values(S.leaves).filter(l => l.status === 'Menunggu').length;
+  $('#nav').innerHTML = VIEWS.map(([k, n]) => `<button type="button" data-act="nav" data-v="${k}" ${UI.view === k ? 'aria-current="page"' : ''}>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[k]}</svg>${n}${k === 'leave' && pending ? `<span class="count">${pending}</span>` : ''}</button>`).join('');
+  $('#brandCo').textContent = S.settings.company || 'Syarikat';
+  const st = { db: '<span class="dot live"></span>Disimpan & dikongsi', local: '<span class="dot local"></span>Disimpan dalam pelayar ini', offline: '<span class="dot"></span>Sambungan terputus', loading: '<span class="dot"></span>Menyambung…' }[MODE];
+  $('#storeState').innerHTML = st + (readOnly ? '<br>Mod lihat sahaja' : '');
+}
+const who = (e, sub) => `<div class="who"><div class="av" aria-hidden="true">${esc(initials(e?.name))}</div><div><b>${esc(e?.name || 'Pekerja dipadam')}${e?.sample ? '<span class="tag">Contoh</span>' : ''}</b><small>${esc(sub ?? [e?.staffNo, e?.position].filter(Boolean).join(' · '))}</small></div></div>`;
+const chip = st => `<span class="chip ${st.cls}">${esc(st.label)}</span>`;
+function sampleBanner() {
+  if (!Object.values(S.employees).some(e => e.sample)) return '';
+  return `<div class="banner"><div class="grow"><b>Data contoh sedang dipaparkan.</b> Nama bertanda CONTOH hanyalah contoh untuk mencuba sistem. Tambah pekerja sebenar, kemudian buang data contoh.</div><button class="btn sm" data-act="clear-sample">Buang data contoh</button></div>`;
+}
+function loadingOrEmpty() {
+  if (COLLS.some(c => !S.loaded[c])) return `<div class="panel"><div class="empty"><b>Memuatkan data…</b>Senarai pekerja dan rekod kehadiran akan muncul sebentar lagi.</div></div>`;
+  return null;
+}
+
+function viewDashboard() {
+  const t = today(), list = emps();
+  if (!list.length) return head('Papan Utama', fmtDateLong(t)) + `<div class="panel"><div class="empty"><b>Belum ada pekerja</b>Mulakan dengan menambah pekerja pertama. Selepas itu anda boleh merekod kehadiran, cuti dan gaji.<br>
+    <button class="btn primary" data-act="emp-new">Tambah pekerja</button> <button class="btn" data-act="load-sample">Cuba dengan data contoh</button></div></div>`;
+  const st = list.map(e => ({ e, s: dayStatus(e, t), rec: recOf(e.id, t) }));
+  const workday = isWorkday(t);
+  const present = st.filter(x => x.s.code === 'H' || x.s.code === 'L').length;
+  const late = st.filter(x => x.s.code === 'L').length;
+  const onLeave = st.filter(x => x.s.code === 'C').length;
+  const expected = st.filter(x => ['H', 'L', 'TH'].includes(x.s.code) || x.s.cls === 'pending').length;
+  const pending = Object.values(S.leaves).filter(l => l.status === 'Menunggu').sort((a, b) => a.from.localeCompare(b.from));
+  const upcoming = Object.values(S.leaves).filter(l => l.status === 'Diluluskan' && l.to >= t && l.from <= addDays(t, 14)).sort((a, b) => a.from.localeCompare(b.from));
+  const pct = expected ? Math.round(present / expected * 100) : 0;
+  return head('Papan Utama', fmtDateLong(t) + (workday ? '' : ' · ' + (holidayOn(t)?.name || 'Hari rehat')), `<button class="btn primary" data-act="nav" data-v="attendance">Rekod kehadiran</button>`) + sampleBanner() + `
+  <div class="tiles">
+    <div class="tile"><span class="k">Pekerja aktif</span><span class="v">${list.length}</span></div>
+    <div class="tile"><span class="k">Hadir hari ini</span><span class="v">${present}<small> / ${expected}</small></span><div class="meter"><i style="width:${pct}%"></i></div></div>
+    <div class="tile"><span class="k">Lewat (selepas ${esc(S.settings.start)} + ${esc(S.settings.grace)} min)</span><span class="v">${late}</span></div>
+    <div class="tile"><span class="k">Bercuti hari ini</span><span class="v">${onLeave}</span></div>
+    <div class="tile ${pending.length ? 'alert' : ''}"><span class="k">Cuti menunggu kelulusan</span><span class="v">${pending.length}</span></div>
+  </div>
+  <div class="cols">
+    <section class="panel"><div class="panel-h"><h2>Kehadiran hari ini</h2><button class="btn ghost sm" data-act="nav" data-v="attendance">Lihat semua</button></div>
+      <div class="tbl-wrap"><table><thead><tr><th>Pekerja</th><th>Masuk</th><th>Keluar</th><th>Status</th><th></th></tr></thead><tbody>
+      ${st.map(({ e, s, rec }) => `<tr><td>${who(e)}</td><td class="mono">${esc(rec?.in || '—')}</td><td class="mono">${esc(rec?.out || '—')}</td><td>${chip(s)}</td><td>${clockBtns(e, rec, t)}</td></tr>`).join('')}
+      </tbody></table></div></section>
+    <div style="display:flex;flex-direction:column;gap:18px;min-width:0">
+      <section class="panel"><div class="panel-h"><h2>Permohonan cuti menunggu</h2><button class="btn ghost sm" data-act="leave-new">Mohon cuti</button></div>
+        <div class="list">${pending.length ? pending.slice(0, 6).map(leaveItem).join('') : '<div class="empty">Tiada permohonan untuk disemak.</div>'}</div></section>
+      <section class="panel"><div class="panel-h"><h2>Cuti 14 hari akan datang</h2></div>
+        <div class="list">${upcoming.length ? upcoming.map(l => `<div class="li"><div class="grow">${who(empById(l.empId), `${LEAVE[l.type]?.name} · ${fmtDate(l.from)}${l.to !== l.from ? ' – ' + fmtDate(l.to) : ''}`)}</div><span class="chip leave">${l.days} hari</span></div>`).join('') : '<div class="empty">Tiada cuti diluluskan dalam tempoh ini.</div>'}</div></section>
+    </div>
+  </div>`;
+}
+function clockBtns(e, rec, date) {
+  if (date !== today()) return `<div class="row-actions"><button class="btn sm" data-act="att-edit" data-emp="${e.id}" data-date="${date}">Ubah</button></div>`;
+  const a = [];
+  if (!rec?.in) a.push(`<button class="btn sm primary" data-act="clock-in" data-emp="${e.id}">Masuk</button>`);
+  else if (!rec?.out) a.push(`<button class="btn sm" data-act="clock-out" data-emp="${e.id}">Keluar</button>`);
+  a.push(`<button class="btn sm ghost" data-act="att-edit" data-emp="${e.id}" data-date="${date}">Ubah</button>`);
+  return `<div class="row-actions">${a.join('')}</div>`;
+}
+function leaveItem(l) {
+  const e = empById(l.empId);
+  const bal = e && entitlement(e, l.type, l.from.slice(0, 4));
+  const used = leaveUsed(l.empId, l.type, l.from.slice(0, 4));
+  const over = bal != null && used + Number(l.days) > bal;
+  return `<div class="li"><div class="grow">${who(e, `${LEAVE[l.type]?.name} · ${fmtDate(l.from)}${l.to !== l.from ? ' – ' + fmtDate(l.to) : ''} · ${l.days} hari`)}
+    ${l.reason ? `<div class="note" style="margin:4px 0 0 40px">“${esc(l.reason)}”</div>` : ''}
+    ${over ? `<div class="warnline" style="margin:4px 0 0 40px">Melebihi baki (${bal - used} hari tinggal)</div>` : ''}</div>
+    <div class="row-actions"><button class="btn sm" data-act="leave-decide" data-id="${l.id}" data-s="Ditolak">Tolak</button><button class="btn sm primary" data-act="leave-decide" data-id="${l.id}" data-s="Diluluskan">Lulus</button></div></div>`;
+}
+function head(title, sub, tools = '') {
+  return `<div class="head"><div><h1>${esc(title)}</h1>${sub ? `<p>${esc(sub)}</p>` : ''}</div><div class="tools">${tools}</div></div>`;
+}
+
+function viewAttendance() {
+  const tabs = `<div class="seg" role="group" aria-label="Paparan kehadiran"><button data-act="att-tab" data-t="daily" aria-pressed="${UI.attTab === 'daily'}">Harian</button><button data-act="att-tab" data-t="monthly" aria-pressed="${UI.attTab === 'monthly'}">Buku bulanan</button></div>`;
+  const list = emps();
+  if (!list.length) return head('Kehadiran', '', tabs) + `<div class="panel"><div class="empty"><b>Belum ada pekerja</b>Tambah pekerja dahulu untuk merekod masa masuk dan keluar.<br><button class="btn primary" data-act="emp-new">Tambah pekerja</button></div></div>`;
+  if (UI.attTab === 'monthly') return viewRegister(list, tabs);
+  const d = UI.date;
+  const rows = list.map(e => { const rec = recOf(e.id, d); return `<tr><td>${who(e)}</td><td class="mono">${esc(rec?.in || '—')}</td><td class="mono">${esc(rec?.out || '—')}</td><td class="mono">${fmtDur(workedMins(rec))}</td><td>${chip(dayStatus(e, d))}</td><td class="muted">${esc(rec?.note || '')}</td><td>${clockBtns(e, rec, d)}</td></tr>`; }).join('');
+  const isToday = d === today();
+  return head('Kehadiran', fmtDateLong(d) + (holidayOn(d) ? ' · ' + holidayOn(d).name : isWorkday(d) ? '' : ' · Hari rehat'), `${tabs}
+    <button class="btn sm" data-act="date-shift" data-n="-1" aria-label="Hari sebelum">‹</button>
+    <input type="date" id="attDate" value="${d}" style="width:auto" aria-label="Tarikh">
+    <button class="btn sm" data-act="date-shift" data-n="1" aria-label="Hari seterusnya">›</button>
+    ${isToday ? '' : '<button class="btn sm" data-act="date-today">Hari ini</button>'}`) + (isToday ? `
+    <section class="panel"><div class="panel-b" style="display:flex;flex-wrap:wrap;gap:16px 28px;align-items:center">
+      <div class="clock"><span class="eyebrow">Masa sekarang</span><span class="t" id="liveClock">${nowHM()}</span></div>
+      <div class="note" style="max-width:52ch">Waktu kerja ${esc(S.settings.start)}–${esc(S.settings.end)}. Masuk selepas ${esc(S.settings.start)} + ${esc(S.settings.grace)} minit dikira <b>lewat</b>. Tekan <b>Masuk</b> atau <b>Keluar</b> untuk merekod masa sekarang, atau <b>Ubah</b> untuk membetulkan masa.</div>
+    </div></section>` : '') + `
+    <section class="panel"><div class="tbl-wrap"><table><thead><tr><th>Pekerja</th><th>Masuk</th><th>Keluar</th><th>Jam kerja</th><th>Status</th><th>Catatan</th><th></th></tr></thead><tbody>${rows}</tbody></table></div></section>`;
+}
+function viewRegister(list, tabs) {
+  const ym = UI.month, dates = monthDates(ym), t = today();
+  const hdr = dates.map(d => { const dw = parseISO(d).getDay(); return `<th class="${!isWorkday(d) ? 'we' : ''} ${d === t ? 'today' : ''}" title="${esc(holidayOn(d)?.name || DAYS[dw])}">${Number(d.slice(8))}<span class="dw">${DAYS[dw][0]}</span></th>`; }).join('');
+  const body = list.map(e => {
+    const s = monthSummary(e, ym);
+    return `<tr><td class="name">${esc(e.name)}${e.sample ? '<span class="tag">Contoh</span>' : ''}</td>${dates.map(d => { const st = dayStatus(e, d); return `<td><span class="cell ${st.cls}" title="${esc(fmtDate(d) + ': ' + st.label)}">${esc(st.code)}</span></td>`; }).join('')}
+      <td class="num mono">${s.H + s.L}</td><td class="num mono">${s.L}</td><td class="num mono">${s.TH}</td><td class="num mono">${s.C}</td><td class="num mono">${Math.round(s.mins / 60)}</td></tr>`;
+  }).join('');
+  return head('Buku Kehadiran', fmtMonth(ym), `${tabs}
+    <button class="btn sm" data-act="month-shift" data-n="-1" aria-label="Bulan sebelum">‹</button>
+    <input type="month" id="attMonth" value="${ym}" style="width:auto" aria-label="Bulan">
+    <button class="btn sm" data-act="month-shift" data-n="1" aria-label="Bulan seterusnya">›</button>
+    ${canExport() ? '<button class="btn sm" data-act="export-att">Eksport CSV</button>' : ''}`) + `
+  <section class="panel"><div class="tbl-wrap"><table class="reg"><thead><tr><th class="name">Pekerja</th>${hdr}<th class="num">Hadir</th><th class="num">Lewat</th><th class="num">TH</th><th class="num">Cuti</th><th class="num">Jam</th></tr></thead><tbody>${body}</tbody></table></div>
+  <div class="legend"><span><i class="cell ok">H</i>Hadir</span><span><i class="cell warn">L</i>Lewat</span><span><i class="cell bad">TH</i>Tidak hadir</span><span><i class="cell leave">C</i>Cuti</span><span><i class="cell off">CU</i>Cuti umum</span><span><i class="cell off">·</i>Hari rehat</span><span>Klik sel dalam paparan Harian untuk membetulkan rekod.</span></div></section>`;
+}
+
+function viewEmployees() {
+  const all = emps(true);
+  const q = UI.q.trim().toLowerCase();
+  const list = all.filter(e => (UI.showInactive || e.status !== 'Berhenti') && (!q || [e.name, e.staffNo, e.dept, e.position, e.ic].join(' ').toLowerCase().includes(q)));
+  const yr = today().slice(0, 4);
+  const tools = `<input type="search" id="empSearch" placeholder="Cari nama, no. staf, jabatan" value="${esc(UI.q)}" style="width:240px">
+    <label class="check"><input type="checkbox" id="showInactive" ${UI.showInactive ? 'checked' : ''}> Tunjuk yang berhenti</label>
+    <button class="btn primary" data-act="emp-new">Tambah pekerja</button>`;
+  if (!all.length) return head('Pekerja', 'Rekod kakitangan', tools) + `<div class="panel"><div class="empty"><b>Belum ada pekerja</b>Tambah pekerja pertama dengan butiran jawatan, gaji dan tarikh mula.<br><button class="btn primary" data-act="emp-new">Tambah pekerja</button> <button class="btn" data-act="load-sample">Cuba dengan data contoh</button></div></div>`;
+  return head('Pekerja', `${all.filter(e => e.status !== 'Berhenti').length} aktif · ${all.length} jumlah rekod`, tools) + sampleBanner() + `
+  <section class="panel"><div class="tbl-wrap"><table><thead><tr><th>Pekerja</th><th>Jabatan</th><th>Jenis</th><th>Tarikh mula</th><th class="num">Gaji pokok</th><th class="num">Baki cuti tahunan ${yr}</th><th>Status</th><th></th></tr></thead><tbody>
+  ${list.map(e => { const ent = entitlement(e, 'AL', yr), used = leaveUsed(e.id, 'AL', yr); return `<tr>
+    <td>${who(e)}</td><td>${esc(e.dept || '—')}</td><td>${esc(e.type || '—')}</td><td>${fmtDate(e.joinDate)}<br><small class="muted">${serviceYears(e.joinDate, today())} thn khidmat</small></td>
+    <td class="num mono">${money(e.salary)}</td><td class="num mono">${r2(ent - used)} / ${ent}</td>
+    <td><span class="chip ${e.status === 'Berhenti' ? '' : 'ok'}">${esc(e.status || 'Aktif')}</span></td>
+    <td><div class="row-actions"><button class="btn sm" data-act="emp-edit" data-id="${e.id}">Buka</button></div></td></tr>`; }).join('') || '<tr><td colspan="8" class="empty">Tiada pekerja sepadan dengan carian.</td></tr>'}
+  </tbody></table></div></section>`;
+}
+
+function viewLeave() {
+  const yr = today().slice(0, 4), list = emps();
+  const filters = ['Menunggu', 'Diluluskan', 'Ditolak', 'Semua'];
+  const reqs = Object.values(S.leaves).filter(l => UI.leaveFilter === 'Semua' || l.status === UI.leaveFilter).sort((a, b) => b.from.localeCompare(a.from));
+  const balCell = (e, t) => { const ent = entitlement(e, t, yr), used = leaveUsed(e.id, t, yr); const left = r2(ent - used); return `<td class="num mono ${left < 0 ? '' : ''}" title="Diguna ${used} daripada ${ent}"><b style="color:${left <= 0 ? 'var(--bad)' : 'inherit'}">${left}</b><span class="muted"> / ${ent}</span></td>`; };
+  return head('Cuti', `Baki dan permohonan cuti ${yr}`, `<button class="btn primary" data-act="leave-new" ${list.length ? '' : 'disabled'}>Mohon cuti</button>`) + `
+  <section class="panel"><div class="panel-h"><h2>Permohonan</h2><div class="seg" role="group" aria-label="Tapis status">${filters.map(f => `<button data-act="leave-filter" data-f="${f}" aria-pressed="${UI.leaveFilter === f}">${f}</button>`).join('')}</div></div>
+    ${reqs.length ? `<div class="tbl-wrap"><table><thead><tr><th>Pekerja</th><th>Jenis</th><th>Tarikh</th><th class="num">Hari</th><th>Sebab</th><th>Status</th><th></th></tr></thead><tbody>
+    ${reqs.map(l => `<tr><td>${who(empById(l.empId))}</td><td>${esc(LEAVE[l.type]?.name || l.type)}</td><td>${fmtDate(l.from)}${l.to !== l.from ? ' – ' + fmtDate(l.to) : ''}${l.half ? ' (½ hari)' : ''}</td><td class="num mono">${l.days}</td><td class="muted">${esc(l.reason || '')}</td>
+      <td><span class="chip ${l.status === 'Diluluskan' ? 'ok' : l.status === 'Ditolak' ? 'bad' : 'pending'}">${esc(l.status)}</span></td>
+      <td><div class="row-actions">${l.status === 'Menunggu' ? `<button class="btn sm" data-act="leave-decide" data-id="${l.id}" data-s="Ditolak">Tolak</button><button class="btn sm primary" data-act="leave-decide" data-id="${l.id}" data-s="Diluluskan">Lulus</button>` : `<button class="btn sm ghost" data-act="leave-edit" data-id="${l.id}">Ubah</button>`}</div></td></tr>`).join('')}
+    </tbody></table></div>` : `<div class="empty">Tiada permohonan ${UI.leaveFilter === 'Semua' ? '' : 'berstatus “' + esc(UI.leaveFilter) + '”'}.</div>`}</section>
+  <section class="panel"><div class="panel-h"><h2>Baki cuti ${yr}</h2><span class="note">Kelayakan ikut Akta Kerja 1955 (s.60E & s.60F) mengikut tempoh khidmat, kecuali jika ditetapkan pada rekod pekerja.</span></div>
+    <div class="tbl-wrap"><table><thead><tr><th>Pekerja</th><th class="num">Tahunan</th><th class="num">Sakit</th><th class="num">Kecemasan</th><th class="num">Tanpa gaji (diambil)</th><th class="num">Menunggu</th></tr></thead><tbody>
+    ${list.map(e => `<tr><td>${who(e)}</td>${balCell(e, 'AL')}${balCell(e, 'MC')}${balCell(e, 'EL')}<td class="num mono">${leaveUsed(e.id, 'UL', yr)}</td><td class="num mono">${Object.values(S.leaves).filter(l => l.empId === e.id && l.status === 'Menunggu').length}</td></tr>`).join('') || '<tr><td colspan="6" class="empty">Belum ada pekerja.</td></tr>'}
+    </tbody></table></div></section>`;
+}
+
+function viewPayroll() {
+  const ym = UI.payMonth, doc = S.payroll[ym], final = doc?.status === 'Muktamad';
+  const lines = payLines(ym);
+  const tot = k => r2(lines.reduce((s, l) => s + (Number(l[k]) || 0), 0));
+  const inp = (l, k) => final ? `<span class="mono">${money(l[k])}</span>` : `<input type="number" step="0.01" min="0" class="mono pay-in" data-emp="${l.empId}" data-k="${k}" id="pay-${l.empId}-${k}" value="${l[k] || ''}" placeholder="0.00" style="width:92px;text-align:right" ${readOnly ? 'disabled' : ''}>`;
+  const tools = `<button class="btn sm" data-act="pay-shift" data-n="-1" aria-label="Bulan sebelum">‹</button><input type="month" id="payMonth" value="${ym}" style="width:auto" aria-label="Bulan gaji"><button class="btn sm" data-act="pay-shift" data-n="1" aria-label="Bulan seterusnya">›</button>
+    ${canExport() && lines.length ? '<button class="btn sm" data-act="export-pay">Eksport CSV</button>' : ''}
+    ${lines.length ? (final ? '<button class="btn sm" data-act="pay-reopen">Buka semula</button>' : '<button class="btn primary sm" data-act="pay-final">Muktamadkan gaji</button>') : ''}`;
+  return head('Gaji', `${fmtMonth(ym)} · ${final ? 'Muktamad — angka dikunci' : 'Draf — dikira semula secara langsung dari rekod pekerja dan cuti'}`, tools) + `
+  <section class="panel">${lines.length ? `<div class="tbl-wrap"><table><thead><tr><th>Pekerja</th><th class="num">Pokok</th><th class="num">Elaun</th><th class="num">OT / elaun lain</th><th class="num">Potongan CTG</th><th class="num">Kasar</th><th class="num">KWSP</th><th class="num">PERKESO</th><th class="num">SIP</th><th class="num">PCB</th><th class="num">Potongan lain</th><th class="num">Bersih</th><th></th></tr></thead><tbody>
+    ${lines.map(l => `<tr><td>${who(l.emp)}</td><td class="num mono">${money(l.basic)}</td><td class="num mono">${money(l.allowance)}</td><td class="num">${inp(l, 'otherAllow')}</td>
+      <td class="num mono" title="${l.ul} hari cuti tanpa gaji × gaji pokok ÷ 26">${l.ulDeduct ? '−' + money(l.ulDeduct) : '—'}</td><td class="num mono">${money(l.gross)}</td><td class="num mono">${money(l.epfEe)}</td><td class="num mono">${money(l.socsoEe)}</td><td class="num mono">${money(l.eisEe)}</td>
+      <td class="num">${inp(l, 'pcb')}</td><td class="num">${inp(l, 'otherDeduct')}</td><td class="num mono"><b>${money(l.net)}</b></td><td><button class="btn sm" data-act="slip" data-emp="${l.empId}">Slip</button></td></tr>`).join('')}
+    </tbody><tfoot><tr><td>Jumlah (${lines.length} orang)</td><td class="num mono">${money(tot('basic'))}</td><td class="num mono">${money(tot('allowance'))}</td><td class="num mono">${money(tot('otherAllow'))}</td><td class="num mono">${money(tot('ulDeduct'))}</td><td class="num mono">${money(tot('gross'))}</td><td class="num mono">${money(tot('epfEe'))}</td><td class="num mono">${money(tot('socsoEe'))}</td><td class="num mono">${money(tot('eisEe'))}</td><td class="num mono">${money(tot('pcb'))}</td><td class="num mono">${money(tot('otherDeduct'))}</td><td class="num mono">${money(tot('net'))}</td><td></td></tr></tfoot></table></div>
+    <div class="legend"><span><b>Kos majikan:</b> KWSP ${RM(tot('epfEr'))} · PERKESO ${RM(tot('socsoEr'))} · SIP ${RM(tot('eisEr'))} · Jumlah kos gaji ${RM(tot('gross') + tot('epfEr') + tot('socsoEr') + tot('eisEr'))}</span>
+    <span>Caruman dikira dengan kadar peratusan (KWSP 11% / 13% atau 12%; PERKESO 0.5% / 1.75%; SIP 0.2% / 0.2%, siling RM6,000). Semak dengan jadual rasmi KWSP dan PERKESO sebelum membayar. PCB perlu dimasukkan sendiri (kalkulator LHDN).</span></div>`
+    : `<div class="empty"><b>Tiada pekerja untuk ${fmtMonth(ym)}</b>Pekerja aktif dengan gaji pokok akan disenaraikan di sini secara automatik.</div>`}</section>`;
+}
+
+function viewSettings() {
+  const s = S.settings;
+  const hol = (s.holidays || []).slice().sort((a, b) => a.date.localeCompare(b.date));
+  return head('Tetapan', 'Waktu kerja, cuti umum dan maklumat syarikat') + `
+  <div class="cols">
+  <section class="panel"><div class="panel-h"><h2>Syarikat & waktu kerja</h2></div><form class="panel-b" id="settingsForm" style="display:flex;flex-direction:column;gap:14px">
+    <div class="field"><label for="setCo">Nama syarikat</label><input type="text" id="setCo" name="company" value="${esc(s.company)}" required></div>
+    <div class="grid3">
+      <div class="field"><label for="setStart">Masa mula kerja</label><input type="time" id="setStart" name="start" value="${esc(s.start)}" required></div>
+      <div class="field"><label for="setEnd">Masa tamat kerja</label><input type="time" id="setEnd" name="end" value="${esc(s.end)}" required></div>
+      <div class="field"><label for="setGrace">Tempoh ihsan (minit)</label><input type="number" id="setGrace" name="grace" min="0" max="120" value="${esc(s.grace)}"></div>
+    </div>
+    <div class="field"><span class="lbl">Hari bekerja</span><div style="display:flex;flex-wrap:wrap;gap:6px 14px">${[1, 2, 3, 4, 5, 6, 0].map(d => `<label class="check"><input type="checkbox" name="wd" value="${d}" id="wd${d}" ${(s.workdays || []).includes(d) ? 'checked' : ''}>${DAYS[d]}</label>`).join('')}</div>
+      <span class="note">Untuk negeri dengan hujung minggu Jumaat–Sabtu (contohnya Kelantan, Terengganu, Kedah), pilih Ahad hingga Khamis.</span></div>
+    <div class="field" style="max-width:220px"><label for="setEl">Cuti kecemasan setahun (hari)</label><input type="number" id="setEl" name="elDays" min="0" max="30" value="${esc(s.elDays)}"></div>
+    <div><button class="btn primary" type="submit" ${readOnly ? 'disabled' : ''}>Simpan tetapan</button></div>
+  </form></section>
+  <section class="panel"><div class="panel-h"><h2>Cuti umum</h2><span class="note">${hol.length} tarikh</span></div>
+    <form class="panel-b" id="holForm" style="display:grid;grid-template-columns:minmax(0,140px) minmax(0,1fr) auto;gap:8px;align-items:end;border-bottom:1px solid var(--line)">
+      <div class="field"><label for="holDate">Tarikh</label><input type="date" id="holDate" required></div>
+      <div class="field"><label for="holName">Nama</label><input type="text" id="holName" placeholder="cth. Hari Raya Aidilfitri" required></div>
+      <button class="btn" type="submit" ${readOnly ? 'disabled' : ''}>Tambah</button>
+    </form>
+    <div class="list">${hol.length ? hol.map(h => `<div class="li"><span class="mono" style="width:110px">${fmtDate(h.date)}</span><span class="grow">${esc(h.name)}</span><button class="btn sm ghost" data-act="hol-del" data-d="${h.date}" aria-label="Buang ${esc(h.name)}">Buang</button></div>`).join('') : '<div class="empty">Tambah cuti umum negeri anda supaya ia tidak dikira sebagai hari bekerja.</div>'}</div>
+  </section>
+  </div>
+  <section class="panel"><div class="panel-h"><h2>Data</h2></div><div class="panel-b" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center">
+    <span class="note grow" style="flex:1 1 280px">${MODE === 'db' ? 'Data disimpan bersama halaman ini dan dikongsi dengan semua yang anda beri akses Contributor.' : 'Data disimpan dalam pelayar ini sahaja. Buka halaman melalui pautan Claude untuk berkongsi dengan pasukan.'}</span>
+    ${Object.values(S.employees).some(e => e.sample) ? '<button class="btn" data-act="clear-sample">Buang data contoh</button>' : '<button class="btn" data-act="load-sample">Muat data contoh</button>'}
+  </div></section>`;
+}
+
+let renderQueued = false;
+function scheduleRender() { if (renderQueued) return; renderQueued = true; requestAnimationFrame(() => { renderQueued = false; render(); }); }
+function render() {
+  renderNav();
+  const main = $('#main');
+  const act = document.activeElement, focusId = act && main.contains(act) ? act.id : null, sel = focusId && act.selectionStart != null ? [act.selectionStart, act.selectionEnd] : null;
+  const wait = loadingOrEmpty();
+  main.innerHTML = wait || ({ dashboard: viewDashboard, attendance: viewAttendance, employees: viewEmployees, leave: viewLeave, payroll: viewPayroll, settings: viewSettings }[UI.view] || viewDashboard)();
+  if (focusId) { const el = document.getElementById(focusId); if (el) { el.focus(); if (sel) try { el.setSelectionRange(sel[0], sel[1]); } catch (e) {} } }
+  if (MODAL.refresh) MODAL.refresh();
+}
+
+/* ---------- modal ---------- */
+const MODAL = { refresh: null };
+function openModal(html, { wide = false, onMount } = {}) {
+  $('#modalRoot').innerHTML = `<div class="scrim" data-act="modal-scrim"><div class="modal ${wide ? 'wide' : ''}" role="dialog" aria-modal="true">${html}</div></div>`;
+  const first = $('#modalRoot').querySelector('input:not([type=hidden]), select, textarea, button');
+  if (first) first.focus();
+  if (onMount) onMount($('#modalRoot .modal'));
+}
+function closeModal() { $('#modalRoot').innerHTML = ''; MODAL.refresh = null; }
+const mh = t => `<div class="modal-h"><h3>${esc(t)}</h3><button class="btn ghost sm" data-act="modal-close" aria-label="Tutup">✕</button></div>`;
+
+function empModal(id) {
+  const e = id ? clone(S.employees[id]) : { staffNo: nextStaffNo(), status: 'Aktif', type: 'Tetap', joinDate: today(), epf: true };
+  const yr = today().slice(0, 4);
+  const depts = [...new Set(Object.values(S.employees).map(x => x.dept).filter(Boolean))];
+  const bal = id ? `<div class="bal">${['AL', 'MC', 'EL'].map(t => { const ent = entitlement(e, t, yr), used = leaveUsed(id, t, yr); return `<div><small>${LEAVE[t].name}</small><b>${r2(ent - used)} <small>/ ${ent} hari</small></b></div>`; }).join('')}</div>` : '';
+  openModal(mh(id ? e.name : 'Pekerja baharu') + `<form id="empForm"><div class="modal-b">${bal}
+    <div class="grid2">
+      <div class="field span2"><label for="fName">Nama penuh</label><input type="text" id="fName" name="name" value="${esc(e.name)}" required></div>
+      <div class="field"><label for="fNo">No. staf</label><input type="text" id="fNo" name="staffNo" value="${esc(e.staffNo)}" required></div>
+      <div class="field"><label for="fIc">No. kad pengenalan</label><input type="text" id="fIc" name="ic" value="${esc(e.ic)}" placeholder="900101-14-5678"></div>
+      <div class="field"><label for="fPhone">Telefon</label><input type="tel" id="fPhone" name="phone" value="${esc(e.phone)}"></div>
+      <div class="field"><label for="fEmail">E-mel</label><input type="email" id="fEmail" name="email" value="${esc(e.email)}"></div>
+      <div class="field"><label for="fDept">Jabatan</label><input type="text" id="fDept" name="dept" value="${esc(e.dept)}" list="deptList"><datalist id="deptList">${depts.map(d => `<option value="${esc(d)}">`).join('')}</datalist></div>
+      <div class="field"><label for="fPos">Jawatan</label><input type="text" id="fPos" name="position" value="${esc(e.position)}"></div>
+      <div class="field"><label for="fType">Jenis pekerjaan</label><select id="fType" name="type">${['Tetap', 'Kontrak', 'Sambilan', 'Pelatih'].map(t => `<option ${e.type === t ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
+      <div class="field"><label for="fStatus">Status</label><select id="fStatus" name="status">${['Aktif', 'Berhenti'].map(t => `<option ${e.status === t ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
+      <div class="field"><label for="fJoin">Tarikh mula</label><input type="date" id="fJoin" name="joinDate" value="${esc(e.joinDate)}" required></div>
+      <div class="field"><label for="fEnd">Tarikh berhenti</label><input type="date" id="fEnd" name="endDate" value="${esc(e.endDate)}"></div>
+      <div class="field"><label for="fSal">Gaji pokok (RM / bulan)</label><input type="number" step="0.01" min="0" id="fSal" name="salary" value="${esc(e.salary)}" required></div>
+      <div class="field"><label for="fAllow">Elaun tetap (RM / bulan)</label><input type="number" step="0.01" min="0" id="fAllow" name="allowance" value="${esc(e.allowance)}"></div>
+      <div class="field"><label for="fBank">Bank</label><input type="text" id="fBank" name="bank" value="${esc(e.bank)}" placeholder="Maybank"></div>
+      <div class="field"><label for="fAcc">No. akaun</label><input type="text" id="fAcc" name="bankAcc" value="${esc(e.bankAcc)}"></div>
+      <div class="field"><label for="fEpf">No. KWSP</label><input type="text" id="fEpf" name="epfNo" value="${esc(e.epfNo)}"></div>
+      <div class="field"><label for="fAl">Cuti tahunan (hari, kosongkan untuk ikut Akta)</label><input type="number" min="0" max="60" id="fAl" name="alDays" value="${esc(e.alDays)}"></div>
+      <label class="check span2"><input type="checkbox" id="fEpfOn" name="epf" ${e.epf !== false ? 'checked' : ''}> Caruman KWSP dipotong daripada gaji</label>
+    </div></div>
+    <div class="modal-f">${id ? `<button type="button" class="btn danger left" data-act="emp-del" data-id="${id}">Padam rekod</button>` : ''}<button type="button" class="btn" data-act="modal-close">Batal</button><button type="submit" class="btn primary" ${readOnly ? 'disabled' : ''}>${id ? 'Simpan' : 'Tambah pekerja'}</button></div></form>`, { wide: true });
+  $('#empForm').addEventListener('submit', ev => {
+    ev.preventDefault();
+    const f = new FormData(ev.target), o = { ...e };
+    ['name', 'staffNo', 'ic', 'phone', 'email', 'dept', 'position', 'type', 'status', 'joinDate', 'endDate', 'bank', 'bankAcc', 'epfNo'].forEach(k => o[k] = String(f.get(k) || '').trim());
+    o.salary = Number(f.get('salary')) || 0; o.allowance = Number(f.get('allowance')) || 0;
+    o.alDays = f.get('alDays') === '' ? '' : Number(f.get('alDays'));
+    o.epf = !!f.get('epf');
+    if (o.status === 'Berhenti' && !o.endDate) o.endDate = today();
+    const newId = id || uid(); delete o.id;
+    closeModal();
+    run(put('employees', newId, o), id ? 'Rekod pekerja disimpan' : `${o.name} ditambah`);
+  });
+}
+function nextStaffNo() {
+  const n = Object.values(S.employees).map(e => parseInt(String(e.staffNo || '').replace(/\D/g, ''), 10)).filter(Number.isFinite);
+  return 'P' + String((n.length ? Math.max(...n) : 0) + 1).padStart(3, '0');
+}
+
+function attModal(empId, date) {
+  const e = empById(empId), rec = recOf(empId, date) || {};
+  openModal(mh('Ubah kehadiran') + `<form id="attForm"><div class="modal-b">
+    ${who(e, fmtDateLong(date))}
+    <div class="grid2"><div class="field"><label for="aIn">Masa masuk</label><input type="time" id="aIn" value="${esc(rec.in)}"></div><div class="field"><label for="aOut">Masa keluar</label><input type="time" id="aOut" value="${esc(rec.out)}"></div></div>
+    <div class="field"><label for="aNote">Catatan</label><input type="text" id="aNote" value="${esc(rec.note)}" placeholder="cth. Mesyuarat luar, lupa punch"></div>
+    <p class="note">Untuk cuti, gunakan modul Cuti supaya baki cuti dikemas kini.</p>
+  </div><div class="modal-f">${rec.in || rec.out || rec.note ? '<button type="button" class="btn danger left" data-act="att-clear">Kosongkan rekod</button>' : ''}<button type="button" class="btn" data-act="modal-close">Batal</button><button type="submit" class="btn primary" ${readOnly ? 'disabled' : ''}>Simpan</button></div></form>`);
+  $('#attForm').addEventListener('submit', ev => {
+    ev.preventDefault();
+    const r = { in: $('#aIn').value || '', out: $('#aOut').value || '', note: $('#aNote').value.trim() };
+    if (r.in && r.out && r.out < r.in) { toast('Masa keluar mesti selepas masa masuk.'); return; }
+    closeModal();
+    run(putAttendance(date, empId, (r.in || r.out || r.note) ? r : null), 'Kehadiran disimpan');
+  });
+  MODAL.clearAtt = () => { closeModal(); run(putAttendance(date, empId, null), 'Rekod dikosongkan'); };
+}
+
+function leaveModal(id) {
+  const l = id ? clone(S.leaves[id]) : { empId: emps()[0]?.id, type: 'AL', from: addDays(today(), 1), to: addDays(today(), 1), status: 'Menunggu' };
+  openModal(mh(id ? 'Ubah cuti' : 'Permohonan cuti') + `<form id="leaveForm"><div class="modal-b">
+    <div class="grid2">
+      <div class="field span2"><label for="lEmp">Pekerja</label><select id="lEmp">${emps(!!id).map(e => `<option value="${e.id}" ${e.id === l.empId ? 'selected' : ''}>${esc(e.staffNo)} · ${esc(e.name)}</option>`).join('')}</select></div>
+      <div class="field"><label for="lType">Jenis cuti</label><select id="lType">${Object.entries(LEAVE).map(([k, v]) => `<option value="${k}" ${l.type === k ? 'selected' : ''}>${v.name}</option>`).join('')}</select></div>
+      <div class="field"><label for="lStatus">Status</label><select id="lStatus">${['Menunggu', 'Diluluskan', 'Ditolak'].map(s => `<option ${l.status === s ? 'selected' : ''}>${s}</option>`).join('')}</select></div>
+      <div class="field"><label for="lFrom">Dari</label><input type="date" id="lFrom" value="${esc(l.from)}" required></div>
+      <div class="field"><label for="lTo">Hingga</label><input type="date" id="lTo" value="${esc(l.to)}" required></div>
+      <label class="check span2"><input type="checkbox" id="lHalf" ${l.half ? 'checked' : ''}> Separuh hari (untuk cuti satu hari)</label>
+      <div class="field span2"><label for="lReason">Sebab</label><textarea id="lReason" placeholder="cth. Urusan keluarga">${esc(l.reason)}</textarea></div>
+    </div>
+    <div id="leaveCalc" class="note"></div>
+  </div><div class="modal-f">${id ? `<button type="button" class="btn danger left" data-act="leave-del" data-id="${id}">Padam</button>` : ''}<button type="button" class="btn" data-act="modal-close">Batal</button><button type="submit" class="btn primary" ${readOnly ? 'disabled' : ''}>${id ? 'Simpan' : 'Hantar permohonan'}</button></div></form>`);
+  const read = () => ({ ...l, empId: $('#lEmp').value, type: $('#lType').value, status: $('#lStatus').value, from: $('#lFrom').value, to: $('#lTo').value, half: $('#lHalf').checked, reason: $('#lReason').value.trim() });
+  const calc = () => {
+    const x = read(); if (x.to < x.from) { $('#leaveCalc').innerHTML = '<span class="warnline">Tarikh akhir mesti sama atau selepas tarikh mula.</span>'; return; }
+    const days = leaveDays(x), e = empById(x.empId), yr = x.from.slice(0, 4), ent = e ? entitlement(e, x.type, yr) : null;
+    const used = leaveUsed(x.empId, x.type, yr) - (id && S.leaves[id].status === 'Diluluskan' && S.leaves[id].type === x.type ? Number(S.leaves[id].days) : 0);
+    $('#leaveCalc').innerHTML = `<b>${days} hari bekerja</b> (tidak termasuk hari rehat dan cuti umum).` + (ent != null ? ` Baki ${LEAVE[x.type].name.toLowerCase()} ${yr}: ${r2(ent - used)} hari.` + (days > ent - used ? ' <span class="warnline">Permohonan ini melebihi baki.</span>' : '') : '');
+  };
+  $('#leaveForm').addEventListener('input', calc); calc();
+  $('#leaveForm').addEventListener('submit', ev => {
+    ev.preventDefault();
+    const x = read(); if (x.to < x.from) { toast('Semak tarikh cuti.'); return; }
+    x.days = leaveDays(x); if (!x.days) { toast('Tempoh ini tiada hari bekerja.'); return; }
+    if (!x.half || x.from !== x.to) x.half = false;
+    const nid = id || uid(); delete x.id;
+    if (!id) x.createdAt = new Date().toISOString();
+    if (x.status !== 'Menunggu' && (!id || S.leaves[id].status !== x.status)) x.decidedAt = new Date().toISOString();
+    closeModal();
+    run(put('leaves', nid, x), id ? 'Cuti dikemas kini' : 'Permohonan cuti dihantar');
+  });
+}
+
+function slipModal(empId) {
+  const ym = UI.payMonth, l = payLines(ym).find(x => x.empId === empId); if (!l) return;
+  const e = l.emp || {};
+  const html = slipHTML(l, e, ym);
+  openModal(mh('Slip gaji') + `<div class="modal-b">${html}</div><div class="modal-f">${canExport() ? `<button class="btn" data-act="slip-dl" data-emp="${empId}">Simpan slip (.html)</button>` : ''}<button class="btn primary" data-act="modal-close">Tutup</button></div>`, { wide: true });
+}
+function slipHTML(l, e, ym) {
+  const row = (k, v, neg) => v ? `<tr><td>${k}</td><td class="num mono">${neg ? '−' : ''}${money(v)}</td></tr>` : '';
+  return `<div class="slip"><div class="slip-top"><div><h4>${esc(S.settings.company)}</h4><span class="muted">Slip gaji · ${fmtMonth(ym)}</span></div><dl><dt>Nama</dt><dd>${esc(e.name)}</dd><dt>No. staf</dt><dd>${esc(e.staffNo)}</dd><dt>No. K/P</dt><dd>${esc(e.ic || '—')}</dd><dt>No. KWSP</dt><dd>${esc(e.epfNo || '—')}</dd><dt>Jawatan</dt><dd>${esc(e.position || '—')}</dd><dt>Bank</dt><dd>${esc([e.bank, e.bankAcc].filter(Boolean).join(' ') || '—')}</dd></dl></div>
+    <div class="slip-cols"><div><div class="eyebrow">Pendapatan</div><table>${row('Gaji pokok', l.basic)}${row('Elaun tetap', l.allowance)}${row('OT / elaun lain', l.otherAllow)}${row(`Cuti tanpa gaji (${l.ul} hari)`, l.ulDeduct, true)}<tr class="sum"><td>Gaji kasar</td><td class="num mono">${money(l.gross)}</td></tr></table></div>
+    <div><div class="eyebrow">Potongan</div><table>${row('KWSP (11%)', l.epfEe)}${row('PERKESO', l.socsoEe)}${row('SIP', l.eisEe)}${row('PCB', l.pcb)}${row('Potongan lain', l.otherDeduct)}<tr class="sum"><td>Jumlah potongan</td><td class="num mono">${money(l.totalDeduct)}</td></tr></table></div></div>
+    <div class="net"><span>Gaji bersih</span><b>${RM(l.net)}</b></div>
+    <div class="note">Caruman majikan: KWSP ${RM(l.epfEr)} · PERKESO ${RM(l.socsoEr)} · SIP ${RM(l.eisEr)}</div></div>`;
+}
+
+function confirmModal(title, body, okLabel, onOk) {
+  openModal(mh(title) + `<div class="modal-b"><p style="margin:0">${body}</p></div><div class="modal-f"><button class="btn" data-act="modal-close">Batal</button><button class="btn danger armed" data-act="confirm-ok">${esc(okLabel)}</button></div>`);
+  MODAL.onOk = onOk;
+}
+
+/* ---------- exports ---------- */
+const canExport = () => !!DL || MODE === 'local';
+const csv = rows => rows.map(r => r.map(v => { const s = String(v ?? ''); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }).join(',')).join('\n');
+async function saveFile(filename, data) {
+  if (DL) { try { await DL.save({ filename, data }); } catch (e) { if (e && e.code !== 'declined') toast('Fail tidak dapat disimpan di sini.'); } return; }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([data], { type: filename.endsWith('.csv') ? 'text/csv' : 'text/html' })); a.download = filename; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+}
+function exportAttendance() {
+  const ym = UI.month, dates = monthDates(ym);
+  const rows = [['No. staf', 'Nama', ...dates.map(d => d.slice(8)), 'Hadir', 'Lewat', 'Tidak hadir', 'Cuti', 'Jam']];
+  emps().forEach(e => { const s = monthSummary(e, ym); rows.push([e.staffNo, e.name, ...dates.map(d => dayStatus(e, d).code), s.H + s.L, s.L, s.TH, s.C, Math.round(s.mins / 60)]); });
+  saveFile(`kehadiran-${ym}.csv`, '﻿' + csv(rows));
+}
+function exportPayroll() {
+  const ym = UI.payMonth;
+  const rows = [['No. staf', 'Nama', 'No. K/P', 'Bank', 'No. akaun', 'Pokok', 'Elaun', 'OT/elaun lain', 'Potongan CTG', 'Kasar', 'KWSP pekerja', 'KWSP majikan', 'PERKESO pekerja', 'PERKESO majikan', 'SIP pekerja', 'SIP majikan', 'PCB', 'Potongan lain', 'Bersih']];
+  payLines(ym).forEach(l => rows.push([l.emp?.staffNo, l.emp?.name, l.emp?.ic, l.emp?.bank, l.emp?.bankAcc, l.basic, l.allowance, l.otherAllow, l.ulDeduct, l.gross, l.epfEe, l.epfEr, l.socsoEe, l.socsoEr, l.eisEe, l.eisEr, l.pcb, l.otherDeduct, l.net].map(v => typeof v === 'number' ? v.toFixed(2) : v)));
+  saveFile(`gaji-${ym}.csv`, '﻿' + csv(rows));
+}
+
+/* ---------- sample data (marked sample: true so it can be removed in one step) ---------- */
+function buildSample(t) {
+  let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const people = [
+    ['Nurul Aisyah binti Rahman', 'Sumber Manusia', 'Eksekutif HR', '2019-03-04', 4200, 300],
+    ['Muhammad Hafiz bin Ismail', 'Operasi', 'Penyelia Operasi', '2021-07-12', 3800, 250],
+    ['Tan Mei Ling', 'Kewangan', 'Akauntan', '2017-01-09', 6200, 400],
+    ['Rajesh a/l Kumar', 'IT', 'Jurutera Perisian', '2023-02-20', 5500, 0],
+    ['Siti Hajar binti Osman', 'Jualan', 'Eksekutif Jualan', '2024-09-02', 3000, 500],
+    ['Lim Wei Jie', 'Operasi', 'Pembantu Stor', '2025-05-15', 2200, 150],
+  ];
+  const employees = {};
+  people.forEach((p, i) => { const id = 'contoh-' + (i + 1); employees[id] = { sample: true, staffNo: 'P' + String(i + 1).padStart(3, '0'), name: p[0], dept: p[1], position: p[2], joinDate: p[3], salary: p[4], allowance: p[5], type: i === 5 ? 'Kontrak' : 'Tetap', status: 'Aktif', epf: true, phone: '01' + (2 + i) + '-' + (3000000 + i * 111111), ic: '', email: '', bank: 'Maybank', bankAcc: '1640' + (10000000 + i * 1234567), epfNo: '', alDays: '' }; });
+  const ids = Object.keys(employees);
+  const ym = t.slice(0, 7), leaves = {};
+  const addLeave = (n, empId, type, from, to, status, reason) => { leaves['contoh-cuti-' + n] = { sample: true, empId, type, from, to, half: false, status, reason, createdAt: from + 'T01:00:00.000Z' }; };
+  // pick workdays relative to today
+  const wds = []; for (let d = ym + '-01'; d < t; d = addDays(d, 1)) if ([1, 2, 3, 4, 5].includes(parseISO(d).getDay())) wds.push(d);
+  const future = []; for (let d = addDays(t, 1); future.length < 8; d = addDays(d, 1)) if ([1, 2, 3, 4, 5].includes(parseISO(d).getDay())) future.push(d);
+  if (wds.length > 4) addLeave(1, ids[2], 'AL', wds[wds.length - 4], wds[wds.length - 3], 'Diluluskan', 'Balik kampung');
+  if (wds.length > 6) addLeave(2, ids[4], 'MC', wds[3], wds[3], 'Diluluskan', 'Demam, sijil klinik');
+  addLeave(3, ids[1], 'AL', future[2], future[4], 'Menunggu', 'Majlis perkahwinan adik');
+  addLeave(4, ids[5], 'EL', future[0], future[0], 'Menunggu', 'Urusan keluarga');
+  addLeave(5, ids[3], 'AL', future[5], future[5], 'Diluluskan', 'Urusan peribadi');
+  const onLeave = (id, d) => Object.values(leaves).some(l => l.empId === id && l.status === 'Diluluskan' && l.from <= d && l.to >= d);
+  const attendance = {};
+  [...wds, t].forEach(d => {
+    if (![1, 2, 3, 4, 5].includes(parseISO(d).getDay())) return;
+    const records = {};
+    ids.forEach((id, i) => {
+      if (onLeave(id, d)) return;
+      const r = rnd();
+      if (d !== t && r < 0.04) return; // absent
+      if (d === t && i >= 4) return;   // not in yet today
+      const late = r > 0.86;
+      const inMin = 8 * 60 + 38 + Math.floor(rnd() * 20) + (late ? 25 + Math.floor(rnd() * 20) : 0);
+      const outMin = 18 * 60 + Math.floor(rnd() * 40);
+      records[id] = { in: pad(Math.floor(inMin / 60)) + ':' + pad(inMin % 60), out: d === t ? '' : pad(Math.floor(outMin / 60)) + ':' + pad(outMin % 60), note: late && rnd() > 0.5 ? 'Kesesakan jalan raya' : '' };
+    });
+    if (Object.keys(records).length) attendance[d] = { sample: true, date: d, records };
+  });
+  Object.values(leaves).forEach(l => { l.days = 0; for (let d = l.from; d <= l.to; d = addDays(d, 1)) if ([1, 2, 3, 4, 5].includes(parseISO(d).getDay())) l.days++; });
+  return { employees, leaves, attendance };
+}
+async function loadSample() {
+  const data = buildSample(today());
+  const ops = [];
+  for (const c of ['employees', 'leaves', 'attendance']) for (const [id, v] of Object.entries(data[c])) {
+    if (c === 'attendance' && S.attendance[id]) { const merged = clone(S.attendance[id]); delete merged.id; Object.assign(merged.records, v.records); ops.push([c, id, merged]); }
+    else ops.push([c, id, v]);
+  }
+  if (!DB) { ops.forEach(([c, id, v]) => S[c][id] = { ...v, id }); saveLocal(); render(); toast('Data contoh dimuatkan'); return; }
+  for (const [c, id, v] of ops) { if (!(await run(put(c, id, v)))) return; }
+  toast('Data contoh dimuatkan');
+}
+async function clearSample() {
+  const sampleIds = new Set(Object.values(S.employees).filter(e => e.sample).map(e => e.id || ''));
+  Object.entries(S.employees).forEach(([id, e]) => { if (e.sample) sampleIds.add(id); });
+  const ops = [];
+  Object.keys(S.employees).forEach(id => sampleIds.has(id) && ops.push(() => remove('employees', id)));
+  Object.entries(S.leaves).forEach(([id, l]) => (l.sample || sampleIds.has(l.empId)) && ops.push(() => remove('leaves', id)));
+  Object.entries(S.attendance).forEach(([id, a]) => {
+    const keep = Object.fromEntries(Object.entries(a.records || {}).filter(([k]) => !sampleIds.has(k)));
+    if (Object.keys(keep).length === Object.keys(a.records || {}).length) return;
+    const next = { date: a.date || id, records: keep };
+    ops.push(() => Object.keys(keep).length ? put('attendance', id, next) : remove('attendance', id));
+  });
+  Object.entries(S.payroll).forEach(([id, p]) => {
+    const has = Object.keys(p.inputs || {}).concat(Object.keys(p.lines || {})).some(k => sampleIds.has(k)); if (!has) return;
+    const next = clone(p); delete next.id; [next.inputs, next.lines].forEach(o => o && Object.keys(o).forEach(k => sampleIds.has(k) && delete o[k]));
+    ops.push(() => put('payroll', id, next));
+  });
+  for (const op of ops) { if (!(await run(op()))) return; }
+  toast('Data contoh dibuang');
+}
+
+/* ---------- toast ---------- */
+let toastTimer;
+function toast(msg) { $('#toastRoot').innerHTML = `<div class="toast" role="status">${esc(msg)}</div>`; clearTimeout(toastTimer); toastTimer = setTimeout(() => $('#toastRoot').innerHTML = '', 2800); }
+
+/* ---------- events ---------- */
+function persistUI() { try { localStorage.setItem('mejahr.ui', JSON.stringify({ view: UI.view })); } catch (e) {} }
+document.addEventListener('click', ev => {
+  const el = ev.target.closest('[data-act]'); if (!el) return;
+  const a = el.dataset.act, d = el.dataset;
+  if (a === 'modal-scrim') { if (ev.target === el) closeModal(); return; }
+  switch (a) {
+    case 'nav': UI.view = d.v; persistUI(); render(); window.scrollTo(0, 0); break;
+    case 'modal-close': closeModal(); break;
+    case 'confirm-ok': { const f = MODAL.onOk; closeModal(); f && f(); break; }
+    case 'att-tab': UI.attTab = d.t; render(); break;
+    case 'date-shift': UI.date = addDays(UI.date, Number(d.n)); render(); break;
+    case 'date-today': UI.date = today(); render(); break;
+    case 'month-shift': UI.month = shiftMonth(UI.month, Number(d.n)); render(); break;
+    case 'pay-shift': UI.payMonth = shiftMonth(UI.payMonth, Number(d.n)); render(); break;
+    case 'clock-in': { const cur = recOf(d.emp, today()) || {}; const t = nowHM(); run(putAttendance(today(), d.emp, { in: t, out: cur.out || '', note: cur.note || '' }), `${empById(d.emp)?.name?.split(' ')[0]} masuk ${t}`); break; }
+    case 'clock-out': { const cur = recOf(d.emp, today()) || {}; const t = nowHM(); run(putAttendance(today(), d.emp, { in: cur.in || '', out: t, note: cur.note || '' }), `${empById(d.emp)?.name?.split(' ')[0]} keluar ${t}`); break; }
+    case 'att-edit': attModal(d.emp, d.date); break;
+    case 'att-clear': MODAL.clearAtt && MODAL.clearAtt(); break;
+    case 'emp-new': empModal(); break;
+    case 'emp-edit': empModal(d.id); break;
+    case 'emp-del': { const e = S.employees[d.id]; confirmModal('Padam rekod pekerja?', `Rekod <b>${esc(e?.name)}</b> akan dipadam. Rekod kehadiran dan cuti lama kekal tetapi tidak lagi bernama. Jika pekerja telah berhenti, lebih baik tukar status kepada <b>Berhenti</b>.`, 'Padam', () => run(remove('employees', d.id), 'Rekod dipadam')); break; }
+    case 'leave-new': leaveModal(); break;
+    case 'leave-edit': leaveModal(d.id); break;
+    case 'leave-del': confirmModal('Padam permohonan cuti?', 'Permohonan ini akan dibuang dan baki cuti dikira semula.', 'Padam', () => run(remove('leaves', d.id), 'Permohonan dipadam')); break;
+    case 'leave-decide': { const l = clone(S.leaves[d.id]); delete l.id; l.status = d.s; l.decidedAt = new Date().toISOString(); run(put('leaves', d.id, l), d.s === 'Diluluskan' ? 'Cuti diluluskan' : 'Cuti ditolak'); break; }
+    case 'leave-filter': UI.leaveFilter = d.f; render(); break;
+    case 'slip': slipModal(d.emp); break;
+    case 'slip-dl': { const l = payLines(UI.payMonth).find(x => x.empId === d.emp); if (!l) break; const css = [...document.querySelectorAll('style')].map(s => s.textContent).join('\n'); saveFile(`slip-gaji-${l.emp?.staffNo || ''}-${UI.payMonth}.html`, `<!doctype html><html lang="ms"><head><meta charset="utf-8"><title>Slip gaji ${esc(l.emp?.name)} ${fmtMonth(UI.payMonth)}</title><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&family=IBM+Plex+Mono&display=swap"><style>${css} body{padding:24px;max-width:760px;margin:auto}</style></head><body>${slipHTML(l, l.emp || {}, UI.payMonth)}</body></html>`); break; }
+    case 'pay-final': {
+      const ym = UI.payMonth, lines = {}; payLines(ym).forEach(l => { const { emp, ...rest } = l; lines[l.empId] = { ...rest, emp: { name: emp?.name, staffNo: emp?.staffNo, ic: emp?.ic || '', position: emp?.position || '', bank: emp?.bank || '', bankAcc: emp?.bankAcc || '', epfNo: emp?.epfNo || '' } }; });
+      const doc = clone(S.payroll[ym] || { month: ym, inputs: {} }); delete doc.id;
+      confirmModal('Muktamadkan gaji ' + fmtMonth(ym) + '?', 'Angka gaji akan dikunci. Perubahan gaji pekerja atau cuti selepas ini tidak akan mengubah bulan ini kecuali anda membukanya semula.', 'Muktamadkan', () => run(put('payroll', ym, { ...doc, month: ym, status: 'Muktamad', lines, finalizedAt: new Date().toISOString() }), 'Gaji dimuktamadkan'));
+      break;
+    }
+    case 'pay-reopen': { const ym = UI.payMonth, doc = clone(S.payroll[ym]); delete doc.id; delete doc.lines; doc.status = 'Draf'; run(put('payroll', ym, doc), 'Gaji dibuka semula sebagai draf'); break; }
+    case 'export-att': exportAttendance(); break;
+    case 'export-pay': exportPayroll(); break;
+    case 'hol-del': { const s = clone(S.settings); s.holidays = (s.holidays || []).filter(h => h.date !== d.d); run(putSettings(s), 'Cuti umum dibuang'); break; }
+    case 'load-sample': loadSample(); break;
+    case 'clear-sample': confirmModal('Buang data contoh?', 'Semua pekerja bertanda CONTOH serta rekod kehadiran, cuti dan gaji mereka akan dibuang. Data sebenar anda tidak disentuh.', 'Buang', clearSample); break;
+  }
+});
+document.addEventListener('change', ev => {
+  const t = ev.target;
+  if (t.id === 'attDate' && t.value) { UI.date = t.value; render(); }
+  else if (t.id === 'attMonth' && t.value) { UI.month = t.value; render(); }
+  else if (t.id === 'payMonth' && t.value) { UI.payMonth = t.value; render(); }
+  else if (t.id === 'showInactive') { UI.showInactive = t.checked; render(); }
+  else if (t.classList.contains('pay-in')) {
+    const ym = UI.payMonth, doc = clone(S.payroll[ym] || { month: ym, status: 'Draf', inputs: {} }); delete doc.id;
+    doc.inputs = doc.inputs || {}; doc.inputs[t.dataset.emp] = { ...(doc.inputs[t.dataset.emp] || {}), [t.dataset.k]: Number(t.value) || 0 };
+    doc.status = doc.status || 'Draf';
+    run(put('payroll', ym, doc));
+  }
+});
+document.addEventListener('input', ev => { if (ev.target.id === 'empSearch') { UI.q = ev.target.value; render(); } });
+document.addEventListener('submit', ev => {
+  if (ev.target.id === 'settingsForm') {
+    ev.preventDefault(); const f = new FormData(ev.target);
+    const s = { ...clone(S.settings), company: String(f.get('company')).trim(), start: f.get('start'), end: f.get('end'), grace: Number(f.get('grace')) || 0, elDays: Number(f.get('elDays')) || 0, workdays: f.getAll('wd').map(Number) };
+    if (!s.workdays.length) { toast('Pilih sekurang-kurangnya satu hari bekerja.'); return; }
+    run(putSettings(s), 'Tetapan disimpan');
+  } else if (ev.target.id === 'holForm') {
+    ev.preventDefault(); const date = $('#holDate').value, name = $('#holName').value.trim(); if (!date || !name) return;
+    const s = clone(S.settings); s.holidays = (s.holidays || []).filter(h => h.date !== date).concat({ date, name });
+    run(putSettings(s), 'Cuti umum ditambah');
+  }
+});
+document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && $('#modalRoot').innerHTML) closeModal(); });
+setInterval(() => { const c = $('#liveClock'); if (c) c.textContent = nowHM(); }, 5000);
+setInterval(() => { if (!$('#modalRoot').innerHTML && document.activeElement?.tagName !== 'INPUT') { const t = today(); if (UI.date !== t && UI._lastToday === UI.date) UI.date = t; UI._lastToday = t; scheduleRender(); } }, 60000);
+UI._lastToday = today();
+
+render();
+initStore();
+})();
+</script>
