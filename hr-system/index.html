@@ -144,7 +144,11 @@ tfoot td { font-weight: 700; border-top: 2px solid var(--line); }
 .reg th .dw { display: block; font-weight: 500; letter-spacing: 0; text-transform: none; font-size: 10px; }
 .reg th.we { color: var(--off); }
 .reg th.today { color: var(--accent); }
-.cell { display: inline-grid; place-items: center; width: 24px; height: 22px; border-radius: 5px; font-weight: 700; font-size: 10.5px; }
+.cell { border: 0; padding: 0; font: inherit; cursor: default; display: inline-grid; place-items: center; width: 24px; height: 22px; border-radius: 5px; font-weight: 700; font-size: 10.5px; }
+button.cell { cursor: pointer; }
+button.cell:hover { outline: 1px solid var(--muted); }
+.cell.future { opacity: .45; }
+.reg td.name .src { white-space: nowrap; }
 .cell.ok { background: var(--ok-soft); color: var(--ok); }
 .cell.warn { background: var(--warn-soft); color: var(--warn); }
 .cell.bad { background: var(--bad-soft); color: var(--bad); }
@@ -164,8 +168,6 @@ tfoot td { font-weight: 700; border-top: 2px solid var(--line); }
 .banner { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; padding: 10px 14px; border-radius: var(--r); background: var(--warn-soft); color: var(--ink); border: 1px solid color-mix(in srgb, var(--kunyit) 35%, transparent); font-size: 13px; }
 .banner .grow { flex: 1 1 240px; }
 
-.clock { display: flex; flex-direction: column; gap: 4px; }
-.clock .t { font-family: var(--f-mono); font-size: 34px; font-weight: 500; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
 .bal { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 10px; }
 .bal div { background: var(--sunk); border-radius: 8px; padding: 8px 10px; }
 .bal b { display: block; font-size: 18px; font-variant-numeric: tabular-nums; }
@@ -183,19 +185,6 @@ tfoot td { font-weight: 700; border-top: 2px solid var(--line); }
 .note { font-size: 12px; color: var(--muted); }
 .warnline { color: var(--warn); font-weight: 600; font-size: 13px; }
 
-/* Payslip */
-.slip { border: 1px solid var(--line); border-radius: 10px; padding: 18px; display: flex; flex-direction: column; gap: 14px; }
-.slip-top { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; border-bottom: 2px solid var(--ink); padding-bottom: 12px; }
-.slip-top h4 { margin: 0; font-size: 16px; }
-.slip dl { display: grid; grid-template-columns: auto 1fr; gap: 3px 14px; margin: 0; font-size: 13px; }
-.slip dt { color: var(--muted); }
-.slip dd { margin: 0; }
-.slip-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
-.slip table td { padding: 5px 0; border: 0; }
-.slip table td.num { text-align: right; }
-.slip .sum td { border-top: 1px solid var(--line); font-weight: 700; padding-top: 7px; }
-.net { display: flex; justify-content: space-between; align-items: baseline; background: var(--accent-soft); border-radius: 8px; padding: 12px 14px; }
-.net b { font-size: 22px; color: var(--accent); font-variant-numeric: tabular-nums; }
 
 .toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 9px 16px; border-radius: 9px; font-weight: 600; z-index: 60; box-shadow: var(--shadow); max-width: calc(100% - 32px); }
 
@@ -212,6 +201,15 @@ tfoot td { font-weight: 700; border-top: 2px solid var(--line); }
   .head h1 { font-size: 22px; }
 }
 @media (prefers-reduced-motion: no-preference) { .scrim { animation: fade .12s ease-out; } @keyframes fade { from { opacity: .4 } } }
+.prog { height: 8px; background: var(--sunk); border-radius: 9px; overflow: hidden; min-width: 110px; }
+.prog i { display: block; height: 100%; border-radius: 9px; background: var(--ok); }
+.prog i.warn { background: var(--kunyit); }
+.prog i.bad { background: var(--bad); }
+.li.sev-bad { box-shadow: inset 3px 0 0 var(--bad); }
+.li.sev-warn { box-shadow: inset 3px 0 0 var(--kunyit); }
+.li.sev-hr { box-shadow: inset 3px 0 0 var(--accent); }
+.big { font-size: 20px; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+.src { font-size: 11px; color: var(--muted); }
 </style>
 
 <div class="app">
@@ -221,7 +219,7 @@ tfoot td { font-weight: 700; border-top: 2px solid var(--line); }
     <div class="rail-foot" id="storeState"><span class="dot"></span>Menyambung…</div>
   </aside>
   <main id="main" aria-live="polite">
-    <div class="empty"><b>Memuatkan data HR…</b>Pekerja, kehadiran dan cuti akan dipaparkan di sini.</div>
+    <div class="empty"><b>Memuatkan data HR…</b>Baki cuti, permohonan, target dan amaran akan dipaparkan di sini.</div>
   </main>
 </div>
 <div id="modalRoot"></div>
@@ -238,68 +236,66 @@ const pad = n => String(n).padStart(2, '0');
 const toISO = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 const parseISO = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
 const today = () => toISO(new Date());
-const nowHM = () => { const d = new Date(); return pad(d.getHours()) + ':' + pad(d.getMinutes()); };
 const addDays = (s, n) => { const d = parseISO(s); d.setDate(d.getDate() + n); return toISO(d); };
+const daysBetween = (a, b) => Math.round((parseISO(b) - parseISO(a)) / 86400000);
 const daysInMonth = ym => { const [y, m] = ym.split('-').map(Number); return new Date(y, m, 0).getDate(); };
-const monthDates = ym => Array.from({ length: daysInMonth(ym) }, (_, i) => `${ym}-${pad(i + 1)}`);
 const shiftMonth = (ym, n) => { const [y, m] = ym.split('-').map(Number); const d = new Date(y, m - 1 + n, 1); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}`; };
-const hm2min = t => { if (!t) return null; const [h, m] = t.split(':').map(Number); return h * 60 + m; };
-const fmtDur = mins => mins == null || mins < 0 ? '—' : `${Math.floor(mins / 60)}j ${pad(mins % 60)}m`;
 const r2 = n => Math.round((n + Number.EPSILON) * 100) / 100;
-const money = n => (r2(n || 0)).toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-const RM = n => 'RM ' + money(n);
+const money = n => (Number(n) || 0).toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const num = n => (Number(n) || 0).toLocaleString('en-MY', { maximumFractionDigits: 2 });
 const MONTHS = ['Januari', 'Februari', 'Mac', 'April', 'Mei', 'Jun', 'Julai', 'Ogos', 'September', 'Oktober', 'November', 'Disember'];
 const DAYS = ['Ahad', 'Isnin', 'Selasa', 'Rabu', 'Khamis', 'Jumaat', 'Sabtu'];
 const fmtDate = s => { if (!s) return '—'; const d = parseISO(s); return `${d.getDate()} ${MONTHS[d.getMonth()].slice(0, 3)} ${d.getFullYear()}`; };
 const fmtDateLong = s => { const d = parseISO(s); return `${DAYS[d.getDay()]}, ${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`; };
 const fmtMonth = ym => { const [y, m] = ym.split('-').map(Number); return `${MONTHS[m - 1]} ${y}`; };
+const fmtRange = l => fmtDate(l.from) + (l.to !== l.from ? ' – ' + fmtDate(l.to) : '') + (l.half ? ' (½ hari)' : '');
 const initials = n => String(n || '?').split(/\s+/).filter(w => !/^(bin|binti|a\/l|a\/p|@)$/i.test(w)).slice(0, 2).map(w => w[0]).join('').toUpperCase();
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 const clone = o => JSON.parse(JSON.stringify(o ?? {}));
+const strip = o => { const c = clone(o); delete c.id; return c; };
 
 const LEAVE = {
-  AL: { name: 'Cuti Tahunan', short: 'Tahunan' },
-  MC: { name: 'Cuti Sakit', short: 'Sakit' },
-  EL: { name: 'Cuti Kecemasan', short: 'Kecemasan' },
-  UL: { name: 'Cuti Tanpa Gaji', short: 'Tanpa gaji' },
-  ML: { name: 'Cuti Bersalin', short: 'Bersalin' },
-  PL: { name: 'Cuti Paterniti', short: 'Paterniti' },
+  AL: 'Cuti Tahunan', MC: 'Cuti Sakit', EL: 'Cuti Kecemasan', UL: 'Cuti Tanpa Gaji', ML: 'Cuti Bersalin', PL: 'Cuti Paterniti',
 };
+const WARN_LEVELS = ['Amaran lisan', 'Surat amaran 1', 'Surat amaran 2', 'Surat amaran terakhir'];
 const DEFAULT_SETTINGS = {
-  company: 'Syarikat Anda Sdn. Bhd.', start: '09:00', end: '18:00', grace: 10,
-  workdays: [1, 2, 3, 4, 5], elDays: 3, holidays: [],
+  company: 'Syarikat Anda Sdn. Bhd.', workdays: [1, 2, 3, 4, 5], holidays: [],
+  lowBal: 2, targetMin: 80, noticeDays: 3, pendingDays: 3, missStreak: 2,
 };
 
 /* ---------- state ---------- */
-const S = { employees: {}, leaves: {}, attendance: {}, payroll: {}, settings: { ...DEFAULT_SETTINGS }, loaded: {} };
-let UI = { view: 'dashboard', attTab: 'daily', date: today(), month: today().slice(0, 7), payMonth: today().slice(0, 7), q: '', showInactive: false, leaveFilter: 'Menunggu' };
+const COLLS = ['employees', 'positions', 'leaves', 'targets', 'warnings', 'kehadiran'];
+const S = { employees: {}, positions: {}, leaves: {}, targets: {}, warnings: {}, kehadiran: {}, settings: { ...DEFAULT_SETTINGS }, loaded: {} };
+const UI = { view: 'dashboard', year: today().slice(0, 4), month: today().slice(0, 7), leaveFilter: 'Semua', q: '' };
 let DB = null, DL = null, MODE = 'loading', readOnly = false;
-try { const saved = JSON.parse(localStorage.getItem('mejahr.ui') || 'null'); if (saved && saved.view) UI.view = saved.view; } catch (e) {}
-const COLLS = ['employees', 'leaves', 'attendance', 'payroll'];
-const LOCAL_KEY = 'mejahr.data.v1';
+try { const v = JSON.parse(localStorage.getItem('mejahr.ui') || 'null'); if (v && v.view) UI.view = v.view; } catch (e) {}
+const LOCAL_KEY = 'mejahr.data.v2';
 
-/* ---------- storage adapter: shared db when available, this browser otherwise ---------- */
+/* ---------- storage: shared db when available, this browser otherwise ---------- */
 function loadLocal() {
-  try { const d = JSON.parse(localStorage.getItem(LOCAL_KEY) || 'null'); if (d) { COLLS.forEach(c => { S[c] = {}; Object.entries(d[c] || {}).forEach(([id, v]) => S[c][id] = { ...v, id }); }); S.settings = { ...DEFAULT_SETTINGS, ...(d.settings || {}) }; } } catch (e) {}
-  COLLS.forEach(c => S.loaded[c] = true); S.loaded.settings = true;
+  try {
+    const d = JSON.parse(localStorage.getItem(LOCAL_KEY) || 'null');
+    if (d) { COLLS.forEach(c => { S[c] = {}; Object.entries(d[c] || {}).forEach(([id, v]) => S[c][id] = { ...v, id }); }); S.settings = { ...DEFAULT_SETTINGS, ...(d.settings || {}) }; }
+  } catch (e) {}
+  COLLS.forEach(c => S.loaded[c] = true);
 }
 function saveLocal() {
-  try { localStorage.setItem(LOCAL_KEY, JSON.stringify({ employees: S.employees, leaves: S.leaves, attendance: S.attendance, payroll: S.payroll, settings: S.settings })); } catch (e) { toast('Pelayar ini tidak membenarkan simpanan setempat.'); }
+  try { const o = { settings: S.settings }; COLLS.forEach(c => o[c] = S[c]); localStorage.setItem(LOCAL_KEY, JSON.stringify(o)); }
+  catch (e) { toast('Pelayar ini tidak membenarkan simpanan setempat.'); }
 }
 function dbError(e) {
   const code = e && e.code;
   if (code === 'invalid_argument') { readOnly = true; return 'Anda hanya boleh melihat. Minta pemilik beri akses Contributor untuk menyimpan.'; }
-  if (code === 'quota_exceeded') return 'Storan penuh. Padam rekod lama (contohnya data contoh) dan cuba lagi.';
+  if (code === 'quota_exceeded') return 'Storan penuh. Padam rekod lama dan cuba lagi.';
   if (code === 'resource_exhausted') return 'Terlalu banyak perubahan serentak. Tunggu sebentar dan cuba lagi.';
   return 'Tidak dapat menyimpan sekarang. Semak sambungan dan cuba lagi.';
 }
 async function run(p, okMsg) {
-  try { await p; if (okMsg) toast(okMsg); return true; }
-  catch (e) { toast(dbError(e)); render(); return false; }
+  try { await p; if (okMsg) toast(okMsg); return true; } catch (e) { toast(dbError(e)); render(); return false; }
 }
 function put(coll, id, data) {
-  if (DB) return DB.collection(coll).doc(id).set(data);
-  S[coll][id] = { ...clone(data), id }; saveLocal(); scheduleRender(); return Promise.resolve();
+  if (DB) return DB.collection(coll).doc(id).set(strip(data));
+  S[coll][id] = { ...strip(data), id }; saveLocal(); scheduleRender(); return Promise.resolve();
 }
 function remove(coll, id) {
   if (DB) return DB.collection(coll).doc(id).delete();
@@ -309,649 +305,628 @@ function putSettings(data) {
   if (DB) return DB.doc('settings/company').set(data);
   S.settings = { ...DEFAULT_SETTINGS, ...clone(data) }; saveLocal(); scheduleRender(); return Promise.resolve();
 }
-/* Attendance is one document per date; merge a single employee's record so two people clocking in at once don't overwrite each other. */
-function putAttendance(date, empId, rec) {
-  const cur = S.attendance[date];
+/* Targets are one document per month; merge one person's figures so two people editing at once don't overwrite each other. */
+function putTarget(ym, empId, entry) {
+  const cur = S.targets[ym];
   if (DB) {
-    const ref = DB.doc('attendance/' + date);
-    if (cur && rec) return ref.update({ records: { [empId]: rec } });
-    const next = clone(cur || { date, records: {} }); delete next.id;
-    if (rec) next.records[empId] = rec; else delete next.records[empId];
-    if (!Object.keys(next.records).length) return ref.delete();
-    return ref.set(next);
+    const ref = DB.doc('targets/' + ym);
+    if (cur) return ref.update({ entries: { [empId]: entry } });
+    return ref.set({ month: ym, entries: { [empId]: entry } });
   }
-  const next = clone(cur || { date, records: {} });
-  if (rec) next.records[empId] = rec; else delete next.records[empId];
-  if (Object.keys(next.records).length) S.attendance[date] = { ...next, id: date }; else delete S.attendance[date];
-  saveLocal(); scheduleRender(); return Promise.resolve();
+  const next = clone(cur || { month: ym, entries: {} }); next.entries[empId] = { ...(next.entries[empId] || {}), ...entry };
+  S.targets[ym] = { ...next, id: ym }; saveLocal(); scheduleRender(); return Promise.resolve();
 }
-
+/* Kehadiran: one document per month; only exceptions are stored (default is present on a workday). */
+function putMark(ym, empId, dd, code) {
+  const cur = S.kehadiran[ym];
+  if (DB) {
+    const ref = DB.doc('kehadiran/' + ym);
+    if (cur) return ref.update({ marks: { [empId]: { [dd]: code } } });
+    return ref.set({ month: ym, marks: { [empId]: { [dd]: code } } });
+  }
+  const next = clone(cur || { month: ym, marks: {} }); next.marks[empId] = { ...(next.marks[empId] || {}), [dd]: code };
+  S.kehadiran[ym] = { ...next, id: ym }; saveLocal(); scheduleRender(); return Promise.resolve();
+}
 async function initStore() {
   let db = null;
   try { db = window.claude && window.claude.use ? await window.claude.use('db') : null; } catch (e) { db = null; }
   try { DL = window.claude && window.claude.use ? await window.claude.use('downloads') : null; } catch (e) { DL = null; }
-  if (db) {
-    DB = db; MODE = 'db';
-    COLLS.forEach(c => {
-      db.collection(c).onSnapshot(snap => {
-        const o = {}; snap.docs.forEach(d => { o[d.id] = { ...d.data(), id: d.id }; });
-        S[c] = o; S.loaded[c] = true; scheduleRender();
-      }, () => { MODE = 'offline'; scheduleRender(); });
-    });
-    db.doc('settings/company').onSnapshot(d => {
-      S.settings = { ...DEFAULT_SETTINGS, ...(d.exists ? clone(d.data()) : {}) }; S.loaded.settings = true; scheduleRender();
-    }, () => { MODE = 'offline'; scheduleRender(); });
-  } else {
-    MODE = 'local'; loadLocal(); render();
-  }
+  if (!db) { MODE = 'local'; loadLocal(); render(); return; }
+  DB = db; MODE = 'db';
+  COLLS.forEach(c => db.collection(c).onSnapshot(snap => {
+    const o = {}; snap.docs.forEach(d => { o[d.id] = { ...d.data(), id: d.id }; });
+    S[c] = o; S.loaded[c] = true; scheduleRender();
+  }, () => { MODE = 'offline'; scheduleRender(); }));
+  db.doc('settings/company').onSnapshot(d => {
+    S.settings = { ...DEFAULT_SETTINGS, ...(d.exists ? clone(d.data()) : {}) }; scheduleRender();
+  }, () => { MODE = 'offline'; scheduleRender(); });
 }
 
-/* ---------- domain rules ---------- */
-const emps = (all = false) => Object.values(S.employees)
-  .map(e => ({ ...e }))
-  .filter(e => all || e.status !== 'Berhenti')
+/* ---------- rules ---------- */
+const emps = (all = false) => Object.values(S.employees).filter(e => all || e.status !== 'Berhenti')
   .sort((a, b) => String(a.staffNo || '').localeCompare(String(b.staffNo || ''), 'en', { numeric: true }));
 const empById = id => S.employees[id];
+const posOf = e => (e && S.positions[e.positionId]) || null;
+const posName = e => posOf(e)?.name || e?.position || '—';
+const positions = () => Object.values(S.positions).sort((a, b) => String(a.name).localeCompare(String(b.name)));
 const holidayOn = d => (S.settings.holidays || []).find(h => h.date === d);
 const isWorkday = d => (S.settings.workdays || []).includes(parseISO(d).getDay()) && !holidayOn(d);
-function workdaysBetween(from, to) {
-  if (!from || !to || to < from) return 0;
-  let n = 0; for (let d = from; d <= to; d = addDays(d, 1)) if (isWorkday(d)) n++;
-  return n;
-}
-function leaveDays(l) { return l.half && l.from === l.to ? (isWorkday(l.from) ? 0.5 : 0) : workdaysBetween(l.from, l.to); }
+function workdaysBetween(from, to) { let n = 0; if (!from || !to || to < from) return 0; for (let d = from; d <= to; d = addDays(d, 1)) if (isWorkday(d)) n++; return n; }
+const leaveDays = l => l.half && l.from === l.to ? (isWorkday(l.from) ? 0.5 : 0) : workdaysBetween(l.from, l.to);
 function serviceYears(join, asOf) {
   if (!join) return 0; const a = parseISO(join), b = parseISO(asOf);
   let y = b.getFullYear() - a.getFullYear(); if (b.getMonth() < a.getMonth() || (b.getMonth() === a.getMonth() && b.getDate() < a.getDate())) y--;
   return Math.max(0, y);
 }
-/* Akta Kerja 1955: s.60E cuti tahunan 8/12/16 hari, s.60F cuti sakit 14/18/22 hari (<2, 2–5, ≥5 tahun khidmat). */
-function entitlement(emp, type, year) {
-  const yearEnd = `${year}-12-31`, t = today();
-  const yrs = serviceYears(emp.joinDate, yearEnd < t ? yearEnd : t);
-  if (type === 'AL') return emp.alDays !== '' && emp.alDays != null ? Number(emp.alDays) : (yrs < 2 ? 8 : yrs < 5 ? 12 : 16);
-  if (type === 'MC') return yrs < 2 ? 14 : yrs < 5 ? 18 : 22;
-  if (type === 'EL') return Number(S.settings.elDays) || 0;
-  if (type === 'ML') return 98;
-  if (type === 'PL') return 7;
-  return null;
+/* Kelayakan cuti tahunan: rekod pekerja → jawatan → Akta Kerja 1955 s.60E (8/12/16 hari ikut tempoh khidmat). */
+function alEntitlement(e, year) {
+  if (e.alDays !== '' && e.alDays != null) return { days: Number(e.alDays), src: 'Ditetapkan pada pekerja' };
+  const p = posOf(e); if (p && p.alDays !== '' && p.alDays != null) return { days: Number(p.alDays), src: 'Ikut jawatan ' + p.name };
+  const end = `${year}-12-31`, t = today(), yrs = serviceYears(e.joinDate, end < t ? end : t);
+  return { days: yrs < 2 ? 8 : yrs < 5 ? 12 : 16, src: `Akta Kerja 1955 (${yrs} thn khidmat)` };
 }
-function leaveUsed(empId, type, year, statuses = ['Diluluskan']) {
-  return Object.values(S.leaves).filter(l => l.empId === empId && l.type === type && statuses.includes(l.status) && l.from.slice(0, 4) === String(year)).reduce((s, l) => s + (Number(l.days) || 0), 0);
+const leavesOf = (empId, type, year, status) => Object.values(S.leaves).filter(l => l.empId === empId && (!type || l.type === type) && (!year || l.from.slice(0, 4) === String(year)) && (!status || l.status === status));
+const sumDays = ls => r2(ls.reduce((s, l) => s + (Number(l.days) || 0), 0));
+function alSummary(e, year) {
+  const ent = alEntitlement(e, year);
+  const taken = sumDays(leavesOf(e.id, 'AL', year, 'Diluluskan'));
+  const pending = sumDays(leavesOf(e.id, 'AL', year, 'Menunggu'));
+  return { ...ent, taken, pending, balance: r2(ent.days - taken), afterPending: r2(ent.days - taken - pending) };
 }
-function leaveOn(empId, date) {
-  return Object.values(S.leaves).find(l => l.empId === empId && l.status === 'Diluluskan' && l.from <= date && l.to >= date && isWorkday(date));
+function targetOf(e, ym) {
+  const en = S.targets[ym]?.entries?.[e.id] || {};
+  const p = posOf(e);
+  const target = en.target !== undefined && en.target !== '' ? Number(en.target) : (e.target !== '' && e.target != null ? Number(e.target) : (p && p.target !== '' && p.target != null ? Number(p.target) : null));
+  const actual = en.actual === undefined || en.actual === '' ? null : Number(en.actual);
+  return { target, actual, unit: p?.unit || '', custom: en.target !== undefined && en.target !== '', note: en.note || '' };
 }
-const recOf = (empId, date) => S.attendance[date]?.records?.[empId];
-function isLate(rec) { return rec && rec.in && hm2min(rec.in) > hm2min(S.settings.start) + (Number(S.settings.grace) || 0); }
-function dayStatus(emp, date) {
-  const t = today();
-  if (emp.joinDate && date < emp.joinDate) return { code: '', label: 'Belum mula', cls: '' };
-  if (emp.endDate && date > emp.endDate) return { code: '', label: 'Telah berhenti', cls: '' };
-  const rec = recOf(emp.id, date);
-  if (rec && rec.in) return isLate(rec) ? { code: 'L', label: 'Lewat', cls: 'warn' } : { code: 'H', label: 'Hadir', cls: 'ok' };
-  const lv = leaveOn(emp.id, date);
-  if (lv) return { code: 'C', label: LEAVE[lv.type]?.name || 'Cuti', cls: 'leave' };
-  const hol = holidayOn(date);
-  if (hol) return { code: 'CU', label: hol.name, cls: 'off' };
-  if (!isWorkday(date)) return { code: '·', label: 'Hari rehat', cls: 'off' };
-  if (date > t) return { code: '', label: '—', cls: '' };
-  if (date === t && hm2min(nowHM()) < hm2min(S.settings.end)) return { code: '', label: 'Belum masuk', cls: 'pending' };
-  return { code: 'TH', label: 'Tidak hadir', cls: 'bad' };
+/* Pace for the running month: share of the month's workdays already passed. */
+function monthPace(ym) {
+  const t = today(), cur = t.slice(0, 7);
+  if (ym < cur) return 1; if (ym > cur) return 0;
+  const start = ym + '-01', end = ym + '-' + pad(daysInMonth(ym));
+  const all = workdaysBetween(start, end); return all ? workdaysBetween(start, t) / all : 1;
 }
-function workedMins(rec) { if (!rec || !rec.in || !rec.out) return null; return hm2min(rec.out) - hm2min(rec.in); }
-function monthSummary(emp, ym) {
-  const s = { H: 0, L: 0, TH: 0, C: 0, mins: 0 };
-  monthDates(ym).forEach(d => { const st = dayStatus(emp, d); if (st.code === 'H') s.H++; else if (st.code === 'L') { s.L++; } else if (st.code === 'TH') s.TH++; else if (st.code === 'C') s.C++; const w = workedMins(recOf(emp.id, d)); if (w > 0) s.mins += w; });
+function targetStatus(e, ym) {
+  const t = targetOf(e, ym);
+  if (!t.target) return { ...t, pct: null, st: { label: 'Tiada target', cls: '' } };
+  const pct = t.actual == null ? 0 : t.actual / t.target * 100;
+  const pace = monthPace(ym), min = Number(S.settings.targetMin) || 0;
+  let st;
+  if (pct >= 100) st = { label: 'Capai', cls: 'ok' };
+  else if (pace < 1) st = pct >= pace * 100 * min / 100 ? { label: 'Atas landasan', cls: 'pending' } : { label: 'Ketinggalan', cls: 'warn' };
+  else st = pct >= min ? { label: 'Hampir capai', cls: 'warn' } : { label: 'Tidak capai', cls: 'bad' };
+  return { ...t, pct, pace, st };
+}
+
+/* ---------- kehadiran bulanan ---------- */
+const monthDates = ym => Array.from({ length: daysInMonth(ym) }, (_, i) => `${ym}-${pad(i + 1)}`);
+const approvedLeaveOn = (empId, d) => Object.values(S.leaves).find(l => l.empId === empId && l.status === 'Diluluskan' && l.from <= d && l.to >= d);
+function dayCell(e, d) {
+  if ((e.joinDate && d < e.joinDate) || (e.endDate && d > e.endDate)) return { code: '', cls: '', label: 'Belum/tidak berkhidmat', lock: true };
+  const ym = d.slice(0, 7), dd = d.slice(8), mark = S.kehadiran[ym]?.marks?.[e.id]?.[dd] || '';
+  const work = (S.settings.workdays || []).includes(parseISO(d).getDay()), hol = holidayOn(d), future = d > today();
+  if (!work || hol) {
+    if (mark === 'HK') return { code: 'HK', cls: 'ok', label: 'Bekerja pada ' + (hol ? hol.name : 'hari rehat'), worked: 1, extra: 1, rest: true };
+    return hol && work ? { code: 'CU', cls: 'off', label: hol.name, paidOff: 1, rest: true } : { code: '·', cls: 'off', label: 'Hari rehat', rest: true };
+  }
+  const lv = approvedLeaveOn(e.id, d);
+  if (lv) { const half = lv.half ? 0.5 : 1; return lv.type === 'UL' ? { code: 'CTG', cls: 'bad', label: 'Cuti tanpa gaji', unpaid: half, worked: 1 - half, lock: true } : { code: 'C', cls: 'leave', label: LEAVE[lv.type], leave: half, worked: 1 - half, lock: true }; }
+  if (mark === 'TH') return { code: 'TH', cls: 'bad', label: 'Tidak hadir', absent: 1 };
+  if (mark === 'H2') return { code: '½', cls: 'warn', label: 'Separuh hari', worked: 0.5, absent: 0.5 };
+  return { code: 'H', cls: future ? 'ok future' : 'ok', label: future ? 'Hadir (dijangka)' : 'Hadir', worked: 1 };
+}
+function attSummary(e, ym) {
+  const s = { workdays: 0, worked: 0, absent: 0, leave: 0, unpaid: 0, extra: 0, ph: 0 };
+  monthDates(ym).forEach(d => {
+    const c = dayCell(e, d); if (c.lock && !c.code) return;
+    if (!c.rest) s.workdays++;
+    s.worked += c.rest ? 0 : (c.worked || 0); s.absent += c.absent || 0; s.leave += c.leave || 0; s.unpaid += c.unpaid || 0; s.extra += c.extra || 0; s.ph += c.paidOff || 0;
+  });
+  s.paid = r2(s.worked + s.leave + s.ph);
+  s.unpaidTotal = r2(s.absent + s.unpaid);
+  const rate = Number(e.rate) || 0;
+  s.pay = !rate ? null : e.payType === 'Harian' ? r2(rate * (s.paid + s.extra)) : r2(Math.max(0, rate - rate / 26 * s.unpaidTotal));
+  Object.keys(s).forEach(k => { if (typeof s[k] === 'number') s[k] = r2(s[k]); });
   return s;
 }
 
-/* Gaji: kadar peratusan anggaran. KWSP 11% pekerja; majikan 13% (gaji ≤ RM5,000) atau 12%.
-   PERKESO 0.5% / 1.75% dan SIP 0.2% / 0.2% atas gaji hingga siling RM6,000. PCB dimasukkan manual. */
-function payEmployees(ym) {
-  const start = ym + '-01', end = ym + '-' + pad(daysInMonth(ym));
-  return emps(true).filter(e => (!e.joinDate || e.joinDate <= end) && (!e.endDate || e.endDate >= start) && (e.status !== 'Berhenti' || (e.endDate && e.endDate >= start)));
-}
-function unpaidDays(empId, ym) {
-  const start = ym + '-01', end = ym + '-' + pad(daysInMonth(ym));
-  return Object.values(S.leaves).filter(l => l.empId === empId && l.type === 'UL' && l.status === 'Diluluskan' && l.to >= start && l.from <= end)
-    .reduce((s, l) => s + (l.half && l.from === l.to ? 0.5 : workdaysBetween(l.from < start ? start : l.from, l.to > end ? end : l.to)), 0);
-}
-function computePay(emp, ym, inp = {}) {
-  const basic = Number(emp.salary) || 0, allowance = Number(emp.allowance) || 0;
-  const otherAllow = Number(inp.otherAllow) || 0, otherDeduct = Number(inp.otherDeduct) || 0, pcb = Number(inp.pcb) || 0, ot = Number(inp.ot) || 0;
-  const ul = unpaidDays(emp.id, ym);
-  const ulDeduct = r2(basic / 26 * ul);
-  const gross = r2(basic + allowance + otherAllow + ot - ulDeduct);
-  const epfOn = emp.epf === false ? 0 : gross;
-  const epfEe = Math.ceil(epfOn * 0.11);
-  const epfEr = Math.ceil(epfOn * (gross <= 5000 ? 0.13 : 0.12));
-  const capped = Math.min(gross, 6000);
-  const socsoEe = r2(capped * 0.005), socsoEr = r2(capped * 0.0175);
-  const eisEe = r2(capped * 0.002), eisEr = r2(capped * 0.002);
-  const totalDeduct = r2(epfEe + socsoEe + eisEe + pcb + otherDeduct);
-  return { empId: emp.id, basic, allowance, otherAllow, ot, ul, ulDeduct, gross, epfEe, epfEr, socsoEe, socsoEr, eisEe, eisEr, pcb, otherDeduct, totalDeduct, net: r2(gross - totalDeduct) };
-}
-function payLines(ym) {
-  const doc = S.payroll[ym];
-  if (doc && doc.status === 'Muktamad' && doc.lines) return Object.values(doc.lines).map(l => ({ ...l, emp: empById(l.empId) || l.emp })).sort((a, b) => String(a.emp?.staffNo).localeCompare(String(b.emp?.staffNo), 'en', { numeric: true }));
-  const inputs = doc?.inputs || {};
-  return payEmployees(ym).map(e => ({ ...computePay(e, ym, inputs[e.id] || {}), emp: e }));
+/* ---------- warning triggers: computed live from leave and target data ---------- */
+function triggers() {
+  const out = [], t = today(), yr = t.slice(0, 4), s = S.settings, cur = t.slice(0, 7), prev = shiftMonth(cur, -1);
+  const issued = new Set(Object.values(S.warnings).map(w => w.trigger).filter(Boolean));
+  emps().forEach(e => {
+    const a = alSummary(e, yr);
+    if (a.balance < 0) out.push({ key: `al-over:${e.id}:${yr}`, empId: e.id, sev: 'bad', kind: 'staff', title: 'Cuti tahunan melebihi kelayakan', detail: `Diambil ${a.taken} hari daripada ${a.days} hari (${-a.balance} hari berlebihan).` });
+    else if (a.afterPending < 0) out.push({ key: `al-pend:${e.id}:${yr}`, empId: e.id, sev: 'warn', kind: 'hr', title: 'Permohonan akan melebihi baki', detail: `Baki ${a.balance} hari, menunggu ${a.pending} hari.` });
+    else if (a.balance <= (Number(s.lowBal) || 0)) out.push({ key: `al-low:${e.id}:${yr}`, empId: e.id, sev: 'warn', kind: 'info', title: 'Baki cuti tahunan rendah', detail: `Tinggal ${a.balance} daripada ${a.days} hari untuk ${yr}.` });
+    const tp = targetStatus(e, prev);
+    if (tp.target && tp.actual != null && tp.pct < (Number(s.targetMin) || 0)) {
+      let streak = 0; for (let m = prev; streak < 12; m = shiftMonth(m, -1)) { const x = targetStatus(e, m); if (x.target && x.actual != null && x.pct < (Number(s.targetMin) || 0)) streak++; else break; }
+      const hard = streak >= (Number(s.missStreak) || 2);
+      out.push({ key: `tgt:${e.id}:${prev}`, empId: e.id, sev: hard ? 'bad' : 'warn', kind: 'staff', title: hard ? `Tidak capai target ${streak} bulan berturut-turut` : `Tidak capai target ${fmtMonth(prev)}`, detail: `${Math.round(tp.pct)}% daripada ${num(tp.target)} ${tp.unit} (minimum ${s.targetMin}%).` });
+    }
+    const tc = targetStatus(e, cur);
+    if (tc.target && tc.st.label === 'Ketinggalan') out.push({ key: `tgt-pace:${e.id}:${cur}`, empId: e.id, sev: 'warn', kind: 'info', title: 'Ketinggalan target bulan ini', detail: `${Math.round(tc.pct)}% dicapai, sepatutnya sekitar ${Math.round(tc.pace * 100)}% setakat hari ini.` });
+  });
+  Object.values(S.leaves).forEach(l => {
+    const e = empById(l.empId); if (!e || e.status === 'Berhenti') return;
+    if (l.status === 'Menunggu' && l.createdAt && daysBetween(l.createdAt.slice(0, 10), t) >= (Number(s.pendingDays) || 0))
+      out.push({ key: `pend:${l.id}`, empId: l.empId, sev: 'hr', kind: 'hr', leaveId: l.id, title: `Permohonan cuti belum diputuskan ${daysBetween(l.createdAt.slice(0, 10), t)} hari`, detail: `${LEAVE[l.type]} · ${fmtRange(l)}` });
+    if (l.type === 'AL' && l.status !== 'Ditolak' && l.createdAt && l.from >= t.slice(0, 4) + '-01-01' && daysBetween(l.createdAt.slice(0, 10), l.from) < (Number(s.noticeDays) || 0) && l.from >= addDays(t, -30))
+      out.push({ key: `notice:${l.id}`, empId: l.empId, sev: 'warn', kind: 'staff', title: 'Cuti tahunan dipohon tanpa notis cukup', detail: `Dipohon ${fmtDate(l.createdAt.slice(0, 10))} untuk ${fmtRange(l)} (notis minimum ${s.noticeDays} hari).` });
+  });
+  const rank = { bad: 0, warn: 1, hr: 2 };
+  return out.map(x => ({ ...x, issued: issued.has(x.key) })).sort((a, b) => (a.issued - b.issued) || (rank[a.sev] - rank[b.sev]));
 }
 
 /* ---------- rendering ---------- */
 const ICONS = {
   dashboard: '<path d="M3 13h8V3H3zM13 21h8V11h-8zM3 21h8v-6H3zM13 3v6h8V3z"/>',
-  attendance: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
-  employees: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.7 2 6.5 5.5"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18.5 14.8c1.7.8 2.7 2.6 3 5.2"/>',
+  attendance: '<rect x="3" y="4.5" width="18" height="16" rx="2"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4M7 13.5h2M11 13.5h2M15 13.5h2M7 17h2M11 17h2"/>',
   leave: '<rect x="3" y="4.5" width="18" height="16" rx="2"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4M9 15l2 2 4-4"/>',
-  payroll: '<rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 9.5v5M18 9.5v5"/>',
-  settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
+  target: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2"/>',
+  warnings: '<path d="M12 3 2 20h20z"/><path d="M12 10v4.5M12 17.2v.3"/>',
+  employees: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.7 2 6.5 5.5"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18.5 14.8c1.7.8 2.7 2.6 3 5.2"/>',
+  positions: '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 13h18"/>',
+  settings: '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/>',
 };
-const VIEWS = [
-  ['dashboard', 'Papan Utama'], ['attendance', 'Kehadiran'], ['employees', 'Pekerja'], ['leave', 'Cuti'], ['payroll', 'Gaji'], ['settings', 'Tetapan'],
-];
+const VIEWS = [['dashboard', 'Papan Utama'], ['attendance', 'Kehadiran'], ['leave', 'Cuti'], ['target', 'Target Bulanan'], ['warnings', 'Amaran'], ['employees', 'Pekerja'], ['positions', 'Jawatan'], ['settings', 'Tetapan']];
 function renderNav() {
   const pending = Object.values(S.leaves).filter(l => l.status === 'Menunggu').length;
-  $('#nav').innerHTML = VIEWS.map(([k, n]) => `<button type="button" data-act="nav" data-v="${k}" ${UI.view === k ? 'aria-current="page"' : ''}>
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[k]}</svg>${n}${k === 'leave' && pending ? `<span class="count">${pending}</span>` : ''}</button>`).join('');
+  const tw = triggers().filter(x => !x.issued && x.kind === 'staff').length;
+  const badge = { leave: pending, warnings: tw };
+  $('#nav').innerHTML = VIEWS.map(([k, n]) => `<button type="button" data-act="nav" data-v="${k}" ${UI.view === k ? 'aria-current="page"' : ''}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[k]}</svg>${n}${badge[k] ? `<span class="count">${badge[k]}</span>` : ''}</button>`).join('');
   $('#brandCo').textContent = S.settings.company || 'Syarikat';
-  const st = { db: '<span class="dot live"></span>Disimpan & dikongsi', local: '<span class="dot local"></span>Disimpan dalam pelayar ini', offline: '<span class="dot"></span>Sambungan terputus', loading: '<span class="dot"></span>Menyambung…' }[MODE];
-  $('#storeState').innerHTML = st + (readOnly ? '<br>Mod lihat sahaja' : '');
+  $('#storeState').innerHTML = ({ db: '<span class="dot live"></span>Disimpan & dikongsi', local: '<span class="dot local"></span>Disimpan dalam pelayar ini', offline: '<span class="dot"></span>Sambungan terputus', loading: '<span class="dot"></span>Menyambung…' }[MODE]) + (readOnly ? '<br>Mod lihat sahaja' : '');
 }
-const who = (e, sub) => `<div class="who"><div class="av" aria-hidden="true">${esc(initials(e?.name))}</div><div><b>${esc(e?.name || 'Pekerja dipadam')}${e?.sample ? '<span class="tag">Contoh</span>' : ''}</b><small>${esc(sub ?? [e?.staffNo, e?.position].filter(Boolean).join(' · '))}</small></div></div>`;
-const chip = st => `<span class="chip ${st.cls}">${esc(st.label)}</span>`;
+const who = (e, sub) => `<div class="who"><div class="av" aria-hidden="true">${esc(initials(e?.name))}</div><div><b>${esc(e?.name || 'Pekerja dipadam')}${e?.sample ? '<span class="tag">Contoh</span>' : ''}</b><small>${esc(sub ?? [e?.staffNo, posName(e)].filter(Boolean).join(' · '))}</small></div></div>`;
+const statusChip = s => `<span class="chip ${s === 'Diluluskan' ? 'ok' : s === 'Ditolak' ? 'bad' : 'pending'}">${s === 'Diluluskan' ? '✓ ' : s === 'Ditolak' ? '✕ ' : '⏳ '}${esc(s)}</span>`;
+const head = (title, sub, tools = '') => `<div class="head"><div><h1>${esc(title)}</h1>${sub ? `<p>${esc(sub)}</p>` : ''}</div><div class="tools">${tools}</div></div>`;
+const yearTools = () => `<button class="btn sm" data-act="year-shift" data-n="-1" aria-label="Tahun sebelum">‹</button><span class="big" style="font-size:16px">${UI.year}</span><button class="btn sm" data-act="year-shift" data-n="1" aria-label="Tahun seterusnya">›</button>`;
+const monthTools = () => `<button class="btn sm" data-act="month-shift" data-n="-1" aria-label="Bulan sebelum">‹</button><input type="month" id="tgtMonth" value="${UI.month}" style="width:auto" aria-label="Bulan"><button class="btn sm" data-act="month-shift" data-n="1" aria-label="Bulan seterusnya">›</button>`;
 function sampleBanner() {
   if (!Object.values(S.employees).some(e => e.sample)) return '';
-  return `<div class="banner"><div class="grow"><b>Data contoh sedang dipaparkan.</b> Nama bertanda CONTOH hanyalah contoh untuk mencuba sistem. Tambah pekerja sebenar, kemudian buang data contoh.</div><button class="btn sm" data-act="clear-sample">Buang data contoh</button></div>`;
+  return `<div class="banner"><div class="grow"><b>Data contoh sedang dipaparkan.</b> Nama bertanda CONTOH hanyalah contoh. Tambah pekerja sebenar, kemudian buang data contoh.</div><button class="btn sm" data-act="clear-sample">Buang data contoh</button></div>`;
 }
-function loadingOrEmpty() {
-  if (COLLS.some(c => !S.loaded[c])) return `<div class="panel"><div class="empty"><b>Memuatkan data…</b>Senarai pekerja dan rekod kehadiran akan muncul sebentar lagi.</div></div>`;
-  return null;
+const noEmp = () => `<div class="panel"><div class="empty"><b>Belum ada pekerja</b>Tambah jawatan dan pekerja dahulu. Kelayakan cuti tahunan dan target bulanan boleh ditetapkan ikut jawatan.<br><button class="btn primary" data-act="emp-new">Tambah pekerja</button> <button class="btn" data-act="load-sample">Cuba dengan data contoh</button></div></div>`;
+
+function trigItem(x, compact) {
+  const e = empById(x.empId);
+  const act = x.issued ? '<span class="chip ok">Amaran direkod</span>'
+    : x.kind === 'staff' ? `<button class="btn sm" data-act="warn-new" data-emp="${x.empId}" data-key="${esc(x.key)}" data-reason="${esc(x.title + '. ' + x.detail)}">Rekod amaran</button>`
+    : x.leaveId ? `<button class="btn sm" data-act="leave-decide" data-id="${x.leaveId}" data-s="Ditolak">Tolak</button><button class="btn sm primary" data-act="leave-decide" data-id="${x.leaveId}" data-s="Diluluskan">Lulus</button>`
+    : '<span class="chip">Makluman</span>';
+  return `<div class="li sev-${x.sev === 'hr' ? 'hr' : x.sev}"><div class="grow">${who(e, x.title)}<div class="note" style="margin:4px 0 0 40px">${esc(x.detail)}</div></div>${compact ? '' : ''}<div class="row-actions">${act}</div></div>`;
 }
 
 function viewDashboard() {
-  const t = today(), list = emps();
-  if (!list.length) return head('Papan Utama', fmtDateLong(t)) + `<div class="panel"><div class="empty"><b>Belum ada pekerja</b>Mulakan dengan menambah pekerja pertama. Selepas itu anda boleh merekod kehadiran, cuti dan gaji.<br>
-    <button class="btn primary" data-act="emp-new">Tambah pekerja</button> <button class="btn" data-act="load-sample">Cuba dengan data contoh</button></div></div>`;
-  const st = list.map(e => ({ e, s: dayStatus(e, t), rec: recOf(e.id, t) }));
-  const workday = isWorkday(t);
-  const present = st.filter(x => x.s.code === 'H' || x.s.code === 'L').length;
-  const late = st.filter(x => x.s.code === 'L').length;
-  const onLeave = st.filter(x => x.s.code === 'C').length;
-  const expected = st.filter(x => ['H', 'L', 'TH'].includes(x.s.code) || x.s.cls === 'pending').length;
+  const list = emps(); const t = today(), yr = t.slice(0, 4), ym = t.slice(0, 7);
+  if (!list.length) return head('Papan Utama', fmtDateLong(t)) + noEmp();
+  const al = list.map(e => alSummary(e, yr));
   const pending = Object.values(S.leaves).filter(l => l.status === 'Menunggu').sort((a, b) => a.from.localeCompare(b.from));
-  const upcoming = Object.values(S.leaves).filter(l => l.status === 'Diluluskan' && l.to >= t && l.from <= addDays(t, 14)).sort((a, b) => a.from.localeCompare(b.from));
-  const pct = expected ? Math.round(present / expected * 100) : 0;
-  return head('Papan Utama', fmtDateLong(t) + (workday ? '' : ' · ' + (holidayOn(t)?.name || 'Hari rehat')), `<button class="btn primary" data-act="nav" data-v="attendance">Rekod kehadiran</button>`) + sampleBanner() + `
+  const trg = triggers().filter(x => !x.issued);
+  const ts = list.map(e => targetStatus(e, ym)).filter(x => x.target);
+  const hit = ts.filter(x => x.pct >= 100).length;
+  const onLeave = list.filter(e => Object.values(S.leaves).some(l => l.empId === e.id && l.status === 'Diluluskan' && l.from <= t && l.to >= t)).length;
+  return head('Papan Utama', fmtDateLong(t), `<button class="btn primary" data-act="leave-new">Mohon cuti</button>`) + sampleBanner() + `
   <div class="tiles">
-    <div class="tile"><span class="k">Pekerja aktif</span><span class="v">${list.length}</span></div>
-    <div class="tile"><span class="k">Hadir hari ini</span><span class="v">${present}<small> / ${expected}</small></span><div class="meter"><i style="width:${pct}%"></i></div></div>
-    <div class="tile"><span class="k">Lewat (selepas ${esc(S.settings.start)} + ${esc(S.settings.grace)} min)</span><span class="v">${late}</span></div>
-    <div class="tile"><span class="k">Bercuti hari ini</span><span class="v">${onLeave}</span></div>
+    <div class="tile"><span class="k">Jumlah cuti tahunan ${yr}</span><span class="v">${r2(al.reduce((s, a) => s + a.days, 0))}<small> hari</small></span><span class="k">${r2(al.reduce((s, a) => s + a.taken, 0))} diambil · ${r2(al.reduce((s, a) => s + a.balance, 0))} baki</span></div>
     <div class="tile ${pending.length ? 'alert' : ''}"><span class="k">Cuti menunggu kelulusan</span><span class="v">${pending.length}</span></div>
+    <div class="tile"><span class="k">Bercuti hari ini</span><span class="v">${onLeave}<small> / ${list.length}</small></span></div>
+    <div class="tile"><span class="k">Capai target ${MONTHS[+ym.slice(5) - 1]}</span><span class="v">${hit}<small> / ${ts.length}</small></span><div class="meter"><i style="width:${ts.length ? hit / ts.length * 100 : 0}%"></i></div></div>
+    <div class="tile ${trg.some(x => x.sev === 'bad') ? 'alert' : ''}"><span class="k">Amaran dicetuskan</span><span class="v">${trg.length}</span></div>
   </div>
   <div class="cols">
-    <section class="panel"><div class="panel-h"><h2>Kehadiran hari ini</h2><button class="btn ghost sm" data-act="nav" data-v="attendance">Lihat semua</button></div>
-      <div class="tbl-wrap"><table><thead><tr><th>Pekerja</th><th>Masuk</th><th>Keluar</th><th>Status</th><th></th></tr></thead><tbody>
-      ${st.map(({ e, s, rec }) => `<tr><td>${who(e)}</td><td class="mono">${esc(rec?.in || '—')}</td><td class="mono">${esc(rec?.out || '—')}</td><td>${chip(s)}</td><td>${clockBtns(e, rec, t)}</td></tr>`).join('')}
-      </tbody></table></div></section>
-    <div style="display:flex;flex-direction:column;gap:18px;min-width:0">
-      <section class="panel"><div class="panel-h"><h2>Permohonan cuti menunggu</h2><button class="btn ghost sm" data-act="leave-new">Mohon cuti</button></div>
-        <div class="list">${pending.length ? pending.slice(0, 6).map(leaveItem).join('') : '<div class="empty">Tiada permohonan untuk disemak.</div>'}</div></section>
-      <section class="panel"><div class="panel-h"><h2>Cuti 14 hari akan datang</h2></div>
-        <div class="list">${upcoming.length ? upcoming.map(l => `<div class="li"><div class="grow">${who(empById(l.empId), `${LEAVE[l.type]?.name} · ${fmtDate(l.from)}${l.to !== l.from ? ' – ' + fmtDate(l.to) : ''}`)}</div><span class="chip leave">${l.days} hari</span></div>`).join('') : '<div class="empty">Tiada cuti diluluskan dalam tempoh ini.</div>'}</div></section>
-    </div>
+    <section class="panel"><div class="panel-h"><h2>Amaran dicetuskan</h2><button class="btn ghost sm" data-act="nav" data-v="warnings">Lihat semua</button></div>
+      <div class="list">${trg.length ? trg.slice(0, 6).map(x => trigItem(x)).join('') : '<div class="empty">Tiada amaran. Semua baki cuti dan target dalam had.</div>'}</div></section>
+    <section class="panel"><div class="panel-h"><h2>Permohonan cuti menunggu</h2><button class="btn ghost sm" data-act="nav" data-v="leave">Semua permohonan</button></div>
+      <div class="list">${pending.length ? pending.slice(0, 6).map(pendingItem).join('') : '<div class="empty">Tiada permohonan untuk disemak.</div>'}</div></section>
   </div>`;
 }
-function clockBtns(e, rec, date) {
-  if (date !== today()) return `<div class="row-actions"><button class="btn sm" data-act="att-edit" data-emp="${e.id}" data-date="${date}">Ubah</button></div>`;
-  const a = [];
-  if (!rec?.in) a.push(`<button class="btn sm primary" data-act="clock-in" data-emp="${e.id}">Masuk</button>`);
-  else if (!rec?.out) a.push(`<button class="btn sm" data-act="clock-out" data-emp="${e.id}">Keluar</button>`);
-  a.push(`<button class="btn sm ghost" data-act="att-edit" data-emp="${e.id}" data-date="${date}">Ubah</button>`);
-  return `<div class="row-actions">${a.join('')}</div>`;
-}
-function leaveItem(l) {
-  const e = empById(l.empId);
-  const bal = e && entitlement(e, l.type, l.from.slice(0, 4));
-  const used = leaveUsed(l.empId, l.type, l.from.slice(0, 4));
-  const over = bal != null && used + Number(l.days) > bal;
-  return `<div class="li"><div class="grow">${who(e, `${LEAVE[l.type]?.name} · ${fmtDate(l.from)}${l.to !== l.from ? ' – ' + fmtDate(l.to) : ''} · ${l.days} hari`)}
-    ${l.reason ? `<div class="note" style="margin:4px 0 0 40px">“${esc(l.reason)}”</div>` : ''}
-    ${over ? `<div class="warnline" style="margin:4px 0 0 40px">Melebihi baki (${bal - used} hari tinggal)</div>` : ''}</div>
+function pendingItem(l) {
+  const e = empById(l.empId), a = e && l.type === 'AL' ? alSummary(e, l.from.slice(0, 4)) : null;
+  return `<div class="li"><div class="grow">${who(e, `${LEAVE[l.type]} · ${fmtRange(l)} · ${l.days} hari`)}
+    ${a ? `<div class="note" style="margin:4px 0 0 40px">Baki cuti tahunan ${a.balance} hari${a.balance - l.days < 0 ? ` · <span class="warnline">melebihi baki</span>` : ''}</div>` : ''}</div>
     <div class="row-actions"><button class="btn sm" data-act="leave-decide" data-id="${l.id}" data-s="Ditolak">Tolak</button><button class="btn sm primary" data-act="leave-decide" data-id="${l.id}" data-s="Diluluskan">Lulus</button></div></div>`;
-}
-function head(title, sub, tools = '') {
-  return `<div class="head"><div><h1>${esc(title)}</h1>${sub ? `<p>${esc(sub)}</p>` : ''}</div><div class="tools">${tools}</div></div>`;
 }
 
 function viewAttendance() {
-  const tabs = `<div class="seg" role="group" aria-label="Paparan kehadiran"><button data-act="att-tab" data-t="daily" aria-pressed="${UI.attTab === 'daily'}">Harian</button><button data-act="att-tab" data-t="monthly" aria-pressed="${UI.attTab === 'monthly'}">Buku bulanan</button></div>`;
-  const list = emps();
-  if (!list.length) return head('Kehadiran', '', tabs) + `<div class="panel"><div class="empty"><b>Belum ada pekerja</b>Tambah pekerja dahulu untuk merekod masa masuk dan keluar.<br><button class="btn primary" data-act="emp-new">Tambah pekerja</button></div></div>`;
-  if (UI.attTab === 'monthly') return viewRegister(list, tabs);
-  const d = UI.date;
-  const rows = list.map(e => { const rec = recOf(e.id, d); return `<tr><td>${who(e)}</td><td class="mono">${esc(rec?.in || '—')}</td><td class="mono">${esc(rec?.out || '—')}</td><td class="mono">${fmtDur(workedMins(rec))}</td><td>${chip(dayStatus(e, d))}</td><td class="muted">${esc(rec?.note || '')}</td><td>${clockBtns(e, rec, d)}</td></tr>`; }).join('');
-  const isToday = d === today();
-  return head('Kehadiran', fmtDateLong(d) + (holidayOn(d) ? ' · ' + holidayOn(d).name : isWorkday(d) ? '' : ' · Hari rehat'), `${tabs}
-    <button class="btn sm" data-act="date-shift" data-n="-1" aria-label="Hari sebelum">‹</button>
-    <input type="date" id="attDate" value="${d}" style="width:auto" aria-label="Tarikh">
-    <button class="btn sm" data-act="date-shift" data-n="1" aria-label="Hari seterusnya">›</button>
-    ${isToday ? '' : '<button class="btn sm" data-act="date-today">Hari ini</button>'}`) + (isToday ? `
-    <section class="panel"><div class="panel-b" style="display:flex;flex-wrap:wrap;gap:16px 28px;align-items:center">
-      <div class="clock"><span class="eyebrow">Masa sekarang</span><span class="t" id="liveClock">${nowHM()}</span></div>
-      <div class="note" style="max-width:52ch">Waktu kerja ${esc(S.settings.start)}–${esc(S.settings.end)}. Masuk selepas ${esc(S.settings.start)} + ${esc(S.settings.grace)} minit dikira <b>lewat</b>. Tekan <b>Masuk</b> atau <b>Keluar</b> untuk merekod masa sekarang, atau <b>Ubah</b> untuk membetulkan masa.</div>
-    </div></section>` : '') + `
-    <section class="panel"><div class="tbl-wrap"><table><thead><tr><th>Pekerja</th><th>Masuk</th><th>Keluar</th><th>Jam kerja</th><th>Status</th><th>Catatan</th><th></th></tr></thead><tbody>${rows}</tbody></table></div></section>`;
-}
-function viewRegister(list, tabs) {
-  const ym = UI.month, dates = monthDates(ym), t = today();
-  const hdr = dates.map(d => { const dw = parseISO(d).getDay(); return `<th class="${!isWorkday(d) ? 'we' : ''} ${d === t ? 'today' : ''}" title="${esc(holidayOn(d)?.name || DAYS[dw])}">${Number(d.slice(8))}<span class="dw">${DAYS[dw][0]}</span></th>`; }).join('');
-  const body = list.map(e => {
-    const s = monthSummary(e, ym);
-    return `<tr><td class="name">${esc(e.name)}${e.sample ? '<span class="tag">Contoh</span>' : ''}</td>${dates.map(d => { const st = dayStatus(e, d); return `<td><span class="cell ${st.cls}" title="${esc(fmtDate(d) + ': ' + st.label)}">${esc(st.code)}</span></td>`; }).join('')}
-      <td class="num mono">${s.H + s.L}</td><td class="num mono">${s.L}</td><td class="num mono">${s.TH}</td><td class="num mono">${s.C}</td><td class="num mono">${Math.round(s.mins / 60)}</td></tr>`;
-  }).join('');
-  return head('Buku Kehadiran', fmtMonth(ym), `${tabs}
-    <button class="btn sm" data-act="month-shift" data-n="-1" aria-label="Bulan sebelum">‹</button>
-    <input type="month" id="attMonth" value="${ym}" style="width:auto" aria-label="Bulan">
-    <button class="btn sm" data-act="month-shift" data-n="1" aria-label="Bulan seterusnya">›</button>
-    ${canExport() ? '<button class="btn sm" data-act="export-att">Eksport CSV</button>' : ''}`) + `
-  <section class="panel"><div class="tbl-wrap"><table class="reg"><thead><tr><th class="name">Pekerja</th>${hdr}<th class="num">Hadir</th><th class="num">Lewat</th><th class="num">TH</th><th class="num">Cuti</th><th class="num">Jam</th></tr></thead><tbody>${body}</tbody></table></div>
-  <div class="legend"><span><i class="cell ok">H</i>Hadir</span><span><i class="cell warn">L</i>Lewat</span><span><i class="cell bad">TH</i>Tidak hadir</span><span><i class="cell leave">C</i>Cuti</span><span><i class="cell off">CU</i>Cuti umum</span><span><i class="cell off">·</i>Hari rehat</span><span>Klik sel dalam paparan Harian untuk membetulkan rekod.</span></div></section>`;
-}
-
-function viewEmployees() {
-  const all = emps(true);
-  const q = UI.q.trim().toLowerCase();
-  const list = all.filter(e => (UI.showInactive || e.status !== 'Berhenti') && (!q || [e.name, e.staffNo, e.dept, e.position, e.ic].join(' ').toLowerCase().includes(q)));
-  const yr = today().slice(0, 4);
-  const tools = `<input type="search" id="empSearch" placeholder="Cari nama, no. staf, jabatan" value="${esc(UI.q)}" style="width:240px">
-    <label class="check"><input type="checkbox" id="showInactive" ${UI.showInactive ? 'checked' : ''}> Tunjuk yang berhenti</label>
-    <button class="btn primary" data-act="emp-new">Tambah pekerja</button>`;
-  if (!all.length) return head('Pekerja', 'Rekod kakitangan', tools) + `<div class="panel"><div class="empty"><b>Belum ada pekerja</b>Tambah pekerja pertama dengan butiran jawatan, gaji dan tarikh mula.<br><button class="btn primary" data-act="emp-new">Tambah pekerja</button> <button class="btn" data-act="load-sample">Cuba dengan data contoh</button></div></div>`;
-  return head('Pekerja', `${all.filter(e => e.status !== 'Berhenti').length} aktif · ${all.length} jumlah rekod`, tools) + sampleBanner() + `
-  <section class="panel"><div class="tbl-wrap"><table><thead><tr><th>Pekerja</th><th>Jabatan</th><th>Jenis</th><th>Tarikh mula</th><th class="num">Gaji pokok</th><th class="num">Baki cuti tahunan ${yr}</th><th>Status</th><th></th></tr></thead><tbody>
-  ${list.map(e => { const ent = entitlement(e, 'AL', yr), used = leaveUsed(e.id, 'AL', yr); return `<tr>
-    <td>${who(e)}</td><td>${esc(e.dept || '—')}</td><td>${esc(e.type || '—')}</td><td>${fmtDate(e.joinDate)}<br><small class="muted">${serviceYears(e.joinDate, today())} thn khidmat</small></td>
-    <td class="num mono">${money(e.salary)}</td><td class="num mono">${r2(ent - used)} / ${ent}</td>
-    <td><span class="chip ${e.status === 'Berhenti' ? '' : 'ok'}">${esc(e.status || 'Aktif')}</span></td>
-    <td><div class="row-actions"><button class="btn sm" data-act="emp-edit" data-id="${e.id}">Buka</button></div></td></tr>`; }).join('') || '<tr><td colspan="8" class="empty">Tiada pekerja sepadan dengan carian.</td></tr>'}
-  </tbody></table></div></section>`;
+  const list = emps(), ym = UI.month, dates = monthDates(ym), t = today();
+  const tools = monthTools() + (canExport() && list.length ? '<button class="btn sm" data-act="export-att">Eksport CSV</button>' : '');
+  if (!list.length) return head('Kehadiran', fmtMonth(ym), tools) + noEmp();
+  const hdr = dates.map(d => { const dw = parseISO(d).getDay(), rest = !(S.settings.workdays || []).includes(dw) || holidayOn(d); return `<th class="${rest ? 'we' : ''} ${d === t ? 'today' : ''}" title="${esc(holidayOn(d)?.name || DAYS[dw])}">${Number(d.slice(8))}<span class="dw">${DAYS[dw][0]}</span></th>`; }).join('');
+  let tot = { paid: 0, absent: 0, pay: 0 };
+  const sums = list.map(e => { const x = attSummary(e, ym); tot.paid += x.paid; tot.absent += x.unpaidTotal; tot.pay += x.pay || 0; return { e, x }; });
+  const body = list.map(e => `<tr><td class="name"><b>${esc(e.name)}</b>${e.sample ? '<span class="tag">Contoh</span>' : ''}<div class="src">${esc(e.staffNo)} · ${esc(e.payType || 'Bulanan')}</div></td>${dates.map(d => { const c = dayCell(e, d); return `<td>${c.lock ? `<span class="cell ${c.cls}" title="${esc(fmtDate(d) + ': ' + c.label + (c.code ? ' (ubah di Cuti)' : ''))}">${esc(c.code)}</span>` : `<button type="button" class="cell ${c.cls}" data-act="mark" data-emp="${e.id}" data-d="${d}" title="${esc(fmtDate(d) + ': ' + c.label)}" aria-label="${esc(e.name + ', ' + fmtDate(d) + ': ' + c.label)}" ${readOnly ? 'disabled' : ''}>${esc(c.code)}</button>`}</td>`; }).join('')}</tr>`).join('');
+  return head('Kehadiran', `${fmtMonth(ym)} · hari bekerja untuk pembayaran gaji`, tools) + sampleBanner() + `
+  <section class="panel"><div class="panel-h"><h2>Rekod sebulan</h2><span class="note">Semua hari bekerja dikira <b>Hadir</b>. Klik sel: <b>H → TH → ½ → H</b>. Hari rehat: klik untuk <b>HK</b>. Cuti diluluskan diisi sendiri.</span></div>
+  <div class="tbl-wrap"><table class="reg"><thead><tr><th class="name">Pekerja</th>${hdr}</tr></thead><tbody>${body}</tbody></table></div>
+  <div class="legend"><span><i class="cell ok">H</i>Hadir</span><span><i class="cell warn">½</i>Separuh hari</span><span><i class="cell bad">TH</i>Tidak hadir (tidak dibayar)</span><span><i class="cell leave">C</i>Cuti bergaji</span><span><i class="cell bad">CTG</i>Cuti tanpa gaji</span><span><i class="cell off">CU</i>Cuti umum (dibayar)</span><span><i class="cell ok">HK</i>Kerja hari rehat</span><span><i class="cell off">·</i>Hari rehat</span><span>Hari selepas hari ini dipaparkan pudar (dijangka hadir).</span></div></section>
+  <section class="panel"><div class="panel-h"><h2>Ringkasan untuk gaji · ${fmtMonth(ym)}</h2></div>
+  <div class="tbl-wrap"><table><thead><tr><th>Pekerja</th><th class="num">Hari kerja</th><th class="num">Hadir</th><th class="num">Cuti bergaji + CU</th><th class="num">Tak dibayar</th><th class="num">Kerja hari rehat</th><th class="num">Hari dibayar</th><th class="num">Anggaran gaji (RM)</th></tr></thead><tbody>
+  ${sums.map(({ e, x }) => `<tr><td>${who(e, [e.staffNo, (e.payType || 'Bulanan') + (e.rate ? ` RM ${money(e.rate)}${e.payType === 'Harian' ? '/hari' : '/bulan'}` : '')].join(' · '))}</td><td class="num mono">${x.workdays}</td><td class="num mono">${x.worked}</td><td class="num mono">${r2(x.leave + x.ph) || '—'}</td><td class="num mono" style="color:${x.unpaidTotal ? 'var(--bad)' : 'inherit'}">${x.unpaidTotal || '—'}</td><td class="num mono">${x.extra || '—'}</td><td class="num"><span class="big" style="font-size:17px">${x.paid}</span></td><td class="num mono">${x.pay == null ? '<span class="muted">Isi gaji pada rekod pekerja</span>' : money(x.pay)}</td></tr>`).join('')}
+  </tbody><tfoot><tr><td>Jumlah</td><td></td><td></td><td></td><td class="num mono">${r2(tot.absent)}</td><td></td><td class="num mono">${r2(tot.paid)}</td><td class="num mono">${money(tot.pay)}</td></tr></tfoot></table></div>
+  <div class="legend"><span>Anggaran gaji: bulanan = gaji − (gaji ÷ 26 × hari tak dibayar); harian = kadar × (hari dibayar + kerja hari rehat). Bayaran lebih masa untuk hari rehat tidak dikira. Semak sebelum membayar.</span></div></section>`;
 }
 
 function viewLeave() {
-  const yr = today().slice(0, 4), list = emps();
-  const filters = ['Menunggu', 'Diluluskan', 'Ditolak', 'Semua'];
-  const reqs = Object.values(S.leaves).filter(l => UI.leaveFilter === 'Semua' || l.status === UI.leaveFilter).sort((a, b) => b.from.localeCompare(a.from));
-  const balCell = (e, t) => { const ent = entitlement(e, t, yr), used = leaveUsed(e.id, t, yr); const left = r2(ent - used); return `<td class="num mono ${left < 0 ? '' : ''}" title="Diguna ${used} daripada ${ent}"><b style="color:${left <= 0 ? 'var(--bad)' : 'inherit'}">${left}</b><span class="muted"> / ${ent}</span></td>`; };
-  return head('Cuti', `Baki dan permohonan cuti ${yr}`, `<button class="btn primary" data-act="leave-new" ${list.length ? '' : 'disabled'}>Mohon cuti</button>`) + `
-  <section class="panel"><div class="panel-h"><h2>Permohonan</h2><div class="seg" role="group" aria-label="Tapis status">${filters.map(f => `<button data-act="leave-filter" data-f="${f}" aria-pressed="${UI.leaveFilter === f}">${f}</button>`).join('')}</div></div>
+  const list = emps(), yr = UI.year;
+  if (!list.length) return head('Cuti', '') + noEmp();
+  const filters = ['Semua', 'Menunggu', 'Diluluskan', 'Ditolak'];
+  const reqs = Object.values(S.leaves).filter(l => l.from.slice(0, 4) === yr && (UI.leaveFilter === 'Semua' || l.status === UI.leaveFilter)).sort((a, b) => b.from.localeCompare(a.from));
+  const count = s => Object.values(S.leaves).filter(l => l.from.slice(0, 4) === yr && l.status === s).length;
+  return head('Cuti', `Jumlah cuti tahunan dan permohonan ${yr}`, `${yearTools()}<button class="btn primary" data-act="leave-new">Mohon cuti</button>`) + sampleBanner() + `
+  <section class="panel"><div class="panel-h"><h2>Jumlah cuti tahunan ${yr}</h2><span class="note">Baki = kelayakan − diluluskan. Yang menunggu belum ditolak dari baki.</span></div>
+    <div class="tbl-wrap"><table><thead><tr><th>Pekerja</th><th class="num">Kelayakan</th><th class="num">Diambil</th><th class="num">Menunggu</th><th class="num">Baki</th><th style="min-width:140px">Guna</th></tr></thead><tbody>
+    ${list.map(e => { const a = alSummary(e, yr), used = a.days ? Math.min(100, a.taken / a.days * 100) : 0; const cls = a.balance < 0 ? 'bad' : a.balance <= S.settings.lowBal ? 'warn' : ''; return `<tr><td>${who(e)}</td>
+      <td class="num"><span class="mono">${a.days}</span><div class="src">${esc(a.src)}</div></td><td class="num mono">${a.taken}</td><td class="num mono">${a.pending || '—'}</td>
+      <td class="num"><span class="big" style="color:${a.balance < 0 ? 'var(--bad)' : a.balance <= S.settings.lowBal ? 'var(--warn)' : 'inherit'}">${a.balance}</span></td>
+      <td><div class="prog" title="${Math.round(used)}% digunakan"><i class="${cls}" style="width:${used}%"></i></div></td></tr>`; }).join('')}
+    </tbody></table></div></section>
+  <section class="panel"><div class="panel-h"><h2>Permohonan cuti</h2><div class="seg" role="group" aria-label="Tapis status">${filters.map(f => `<button data-act="leave-filter" data-f="${f}" aria-pressed="${UI.leaveFilter === f}">${f}${f !== 'Semua' ? ` (${count(f)})` : ''}</button>`).join('')}</div></div>
     ${reqs.length ? `<div class="tbl-wrap"><table><thead><tr><th>Pekerja</th><th>Jenis</th><th>Tarikh</th><th class="num">Hari</th><th>Sebab</th><th>Status</th><th></th></tr></thead><tbody>
-    ${reqs.map(l => `<tr><td>${who(empById(l.empId))}</td><td>${esc(LEAVE[l.type]?.name || l.type)}</td><td>${fmtDate(l.from)}${l.to !== l.from ? ' – ' + fmtDate(l.to) : ''}${l.half ? ' (½ hari)' : ''}</td><td class="num mono">${l.days}</td><td class="muted">${esc(l.reason || '')}</td>
-      <td><span class="chip ${l.status === 'Diluluskan' ? 'ok' : l.status === 'Ditolak' ? 'bad' : 'pending'}">${esc(l.status)}</span></td>
-      <td><div class="row-actions">${l.status === 'Menunggu' ? `<button class="btn sm" data-act="leave-decide" data-id="${l.id}" data-s="Ditolak">Tolak</button><button class="btn sm primary" data-act="leave-decide" data-id="${l.id}" data-s="Diluluskan">Lulus</button>` : `<button class="btn sm ghost" data-act="leave-edit" data-id="${l.id}">Ubah</button>`}</div></td></tr>`).join('')}
-    </tbody></table></div>` : `<div class="empty">Tiada permohonan ${UI.leaveFilter === 'Semua' ? '' : 'berstatus “' + esc(UI.leaveFilter) + '”'}.</div>`}</section>
-  <section class="panel"><div class="panel-h"><h2>Baki cuti ${yr}</h2><span class="note">Kelayakan ikut Akta Kerja 1955 (s.60E & s.60F) mengikut tempoh khidmat, kecuali jika ditetapkan pada rekod pekerja.</span></div>
-    <div class="tbl-wrap"><table><thead><tr><th>Pekerja</th><th class="num">Tahunan</th><th class="num">Sakit</th><th class="num">Kecemasan</th><th class="num">Tanpa gaji (diambil)</th><th class="num">Menunggu</th></tr></thead><tbody>
-    ${list.map(e => `<tr><td>${who(e)}</td>${balCell(e, 'AL')}${balCell(e, 'MC')}${balCell(e, 'EL')}<td class="num mono">${leaveUsed(e.id, 'UL', yr)}</td><td class="num mono">${Object.values(S.leaves).filter(l => l.empId === e.id && l.status === 'Menunggu').length}</td></tr>`).join('') || '<tr><td colspan="6" class="empty">Belum ada pekerja.</td></tr>'}
+    ${reqs.map(l => `<tr><td>${who(empById(l.empId))}</td><td style="white-space:nowrap">${esc(LEAVE[l.type] || l.type)}</td><td style="white-space:nowrap">${fmtRange(l)}<div class="src">Dipohon ${fmtDate((l.createdAt || '').slice(0, 10))}</div></td><td class="num mono">${l.days}</td><td class="muted" style="min-width:160px">${esc(l.reason || '')}</td><td>${statusChip(l.status)}</td>
+      <td><div class="row-actions">${l.status === 'Menunggu' ? `<button class="btn sm" data-act="leave-decide" data-id="${l.id}" data-s="Ditolak">Tolak</button><button class="btn sm primary" data-act="leave-decide" data-id="${l.id}" data-s="Diluluskan">Lulus</button>` : ''}<button class="btn sm ghost" data-act="leave-edit" data-id="${l.id}">Ubah</button></div></td></tr>`).join('')}
+    </tbody></table></div>` : `<div class="empty">Tiada permohonan ${UI.leaveFilter === 'Semua' ? '' : 'berstatus “' + esc(UI.leaveFilter) + '” '}untuk ${yr}.</div>`}</section>`;
+}
+
+function viewTarget() {
+  const list = emps(), ym = UI.month;
+  if (!list.length) return head('Target Bulanan', '') + noEmp();
+  const rows = list.map(e => ({ e, t: targetStatus(e, ym) }));
+  const withT = rows.filter(r => r.t.target);
+  const hit = withT.filter(r => r.t.pct >= 100).length;
+  const pace = monthPace(ym);
+  return head('Target Bulanan', `${fmtMonth(ym)}${pace > 0 && pace < 1 ? ` · ${Math.round(pace * 100)}% hari bekerja telah berlalu` : ''}`, monthTools()) + sampleBanner() + `
+  <div class="tiles" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr))">
+    <div class="tile"><span class="k">Capai target</span><span class="v">${hit}<small> / ${withT.length}</small></span></div>
+    <div class="tile"><span class="k">Purata pencapaian</span><span class="v">${withT.length ? Math.round(withT.reduce((s, r) => s + r.t.pct, 0) / withT.length) : 0}<small>%</small></span></div>
+    <div class="tile"><span class="k">Bawah ${S.settings.targetMin}%</span><span class="v">${withT.filter(r => r.t.pct < S.settings.targetMin).length}</span></div>
+  </div>
+  <section class="panel"><div class="panel-h"><h2>Pencapaian ${fmtMonth(ym)}</h2><span class="note">Target asal diambil daripada jawatan. Isi pencapaian, atau tukar target untuk bulan ini sahaja.</span></div>
+    <div class="tbl-wrap"><table><thead><tr><th>Pekerja</th><th class="num">Target</th><th class="num">Pencapaian</th><th style="min-width:150px">Kemajuan</th><th>Status</th></tr></thead><tbody>
+    ${rows.map(({ e, t }) => `<tr><td>${who(e)}</td>
+      <td class="num"><input type="number" min="0" step="any" class="mono tgt-in" id="tg-${e.id}-target" data-emp="${e.id}" data-k="target" value="${t.target ?? ''}" placeholder="—" style="width:110px;text-align:right" ${readOnly ? 'disabled' : ''}><div class="src">${esc(t.unit)}${t.custom ? ' · khas bulan ini' : ''}</div></td>
+      <td class="num"><input type="number" min="0" step="any" class="mono tgt-in" id="tg-${e.id}-actual" data-emp="${e.id}" data-k="actual" value="${t.actual ?? ''}" placeholder="0" style="width:110px;text-align:right" ${readOnly || !t.target ? 'disabled' : ''}></td>
+      <td>${t.target ? `<div style="display:flex;align-items:center;gap:8px"><div class="prog" style="flex:1"><i class="${t.st.cls === 'ok' || t.st.cls === 'pending' ? '' : t.st.cls}" style="width:${Math.min(100, t.pct)}%"></i></div><span class="mono">${Math.round(t.pct)}%</span></div>` : '<span class="muted">Tetapkan target pada jawatan</span>'}</td>
+      <td><span class="chip ${t.st.cls}">${esc(t.st.label)}</span></td></tr>`).join('')}
     </tbody></table></div></section>`;
 }
 
-function viewPayroll() {
-  const ym = UI.payMonth, doc = S.payroll[ym], final = doc?.status === 'Muktamad';
-  const lines = payLines(ym);
-  const tot = k => r2(lines.reduce((s, l) => s + (Number(l[k]) || 0), 0));
-  const inp = (l, k) => final ? `<span class="mono">${money(l[k])}</span>` : `<input type="number" step="0.01" min="0" class="mono pay-in" data-emp="${l.empId}" data-k="${k}" id="pay-${l.empId}-${k}" value="${l[k] || ''}" placeholder="0.00" style="width:92px;text-align:right" ${readOnly ? 'disabled' : ''}>`;
-  const tools = `<button class="btn sm" data-act="pay-shift" data-n="-1" aria-label="Bulan sebelum">‹</button><input type="month" id="payMonth" value="${ym}" style="width:auto" aria-label="Bulan gaji"><button class="btn sm" data-act="pay-shift" data-n="1" aria-label="Bulan seterusnya">›</button>
-    ${canExport() && lines.length ? '<button class="btn sm" data-act="export-pay">Eksport CSV</button>' : ''}
-    ${lines.length ? (final ? '<button class="btn sm" data-act="pay-reopen">Buka semula</button>' : '<button class="btn primary sm" data-act="pay-final">Muktamadkan gaji</button>') : ''}`;
-  return head('Gaji', `${fmtMonth(ym)} · ${final ? 'Muktamad — angka dikunci' : 'Draf — dikira semula secara langsung dari rekod pekerja dan cuti'}`, tools) + `
-  <section class="panel">${lines.length ? `<div class="tbl-wrap"><table><thead><tr><th>Pekerja</th><th class="num">Pokok</th><th class="num">Elaun</th><th class="num">OT / elaun lain</th><th class="num">Potongan CTG</th><th class="num">Kasar</th><th class="num">KWSP</th><th class="num">PERKESO</th><th class="num">SIP</th><th class="num">PCB</th><th class="num">Potongan lain</th><th class="num">Bersih</th><th></th></tr></thead><tbody>
-    ${lines.map(l => `<tr><td>${who(l.emp)}</td><td class="num mono">${money(l.basic)}</td><td class="num mono">${money(l.allowance)}</td><td class="num">${inp(l, 'otherAllow')}</td>
-      <td class="num mono" title="${l.ul} hari cuti tanpa gaji × gaji pokok ÷ 26">${l.ulDeduct ? '−' + money(l.ulDeduct) : '—'}</td><td class="num mono">${money(l.gross)}</td><td class="num mono">${money(l.epfEe)}</td><td class="num mono">${money(l.socsoEe)}</td><td class="num mono">${money(l.eisEe)}</td>
-      <td class="num">${inp(l, 'pcb')}</td><td class="num">${inp(l, 'otherDeduct')}</td><td class="num mono"><b>${money(l.net)}</b></td><td><button class="btn sm" data-act="slip" data-emp="${l.empId}">Slip</button></td></tr>`).join('')}
-    </tbody><tfoot><tr><td>Jumlah (${lines.length} orang)</td><td class="num mono">${money(tot('basic'))}</td><td class="num mono">${money(tot('allowance'))}</td><td class="num mono">${money(tot('otherAllow'))}</td><td class="num mono">${money(tot('ulDeduct'))}</td><td class="num mono">${money(tot('gross'))}</td><td class="num mono">${money(tot('epfEe'))}</td><td class="num mono">${money(tot('socsoEe'))}</td><td class="num mono">${money(tot('eisEe'))}</td><td class="num mono">${money(tot('pcb'))}</td><td class="num mono">${money(tot('otherDeduct'))}</td><td class="num mono">${money(tot('net'))}</td><td></td></tr></tfoot></table></div>
-    <div class="legend"><span><b>Kos majikan:</b> KWSP ${RM(tot('epfEr'))} · PERKESO ${RM(tot('socsoEr'))} · SIP ${RM(tot('eisEr'))} · Jumlah kos gaji ${RM(tot('gross') + tot('epfEr') + tot('socsoEr') + tot('eisEr'))}</span>
-    <span>Caruman dikira dengan kadar peratusan (KWSP 11% / 13% atau 12%; PERKESO 0.5% / 1.75%; SIP 0.2% / 0.2%, siling RM6,000). Semak dengan jadual rasmi KWSP dan PERKESO sebelum membayar. PCB perlu dimasukkan sendiri (kalkulator LHDN).</span></div>`
-    : `<div class="empty"><b>Tiada pekerja untuk ${fmtMonth(ym)}</b>Pekerja aktif dengan gaji pokok akan disenaraikan di sini secara automatik.</div>`}</section>`;
+function viewWarnings() {
+  const trg = triggers();
+  const open = trg.filter(x => !x.issued);
+  const issued = Object.values(S.warnings).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  const s = S.settings;
+  return head('Amaran', 'Dicetuskan secara automatik daripada data cuti dan target', `<button class="btn" data-act="warn-new">Rekod amaran manual</button>`) + `
+  <section class="panel"><div class="panel-h"><h2>Dicetuskan sekarang (${open.length})</h2><button class="btn ghost sm" data-act="nav" data-v="settings">Ubah had</button></div>
+    <div class="list">${open.length ? open.map(x => trigItem(x)).join('') : '<div class="empty">Tiada amaran dicetuskan.</div>'}</div>
+    <div class="legend"><span><b>Pencetus:</b></span><span>Cuti tahunan melebihi kelayakan</span><span>Baki ≤ ${esc(s.lowBal)} hari</span><span>Target bulan lepas &lt; ${esc(s.targetMin)}% (${esc(s.missStreak)} bulan berturut = serius)</span><span>Ketinggalan target bulan ini</span><span>Cuti tahunan dipohon &lt; ${esc(s.noticeDays)} hari sebelum</span><span>Permohonan menunggu ≥ ${esc(s.pendingDays)} hari</span></div></section>
+  <section class="panel"><div class="panel-h"><h2>Rekod amaran dikeluarkan (${issued.length})</h2></div>
+    ${issued.length ? `<div class="tbl-wrap"><table><thead><tr><th>Pekerja</th><th>Tarikh</th><th>Tahap</th><th>Sebab</th><th class="num">Jumlah amaran</th><th></th></tr></thead><tbody>
+    ${issued.map(w => `<tr><td>${who(empById(w.empId))}</td><td>${fmtDate(w.date)}</td><td><span class="chip ${WARN_LEVELS.indexOf(w.level) >= 2 ? 'bad' : 'warn'}">${esc(w.level)}</span></td><td class="muted">${esc(w.reason)}</td><td class="num mono">${Object.values(S.warnings).filter(x => x.empId === w.empId).length}</td><td><div class="row-actions"><button class="btn sm ghost" data-act="warn-edit" data-id="${w.id}">Ubah</button></div></td></tr>`).join('')}
+    </tbody></table></div>` : '<div class="empty">Belum ada amaran direkod. Tekan “Rekod amaran” pada amaran yang dicetuskan.</div>'}</section>`;
+}
+
+function viewEmployees() {
+  const all = emps(true), q = UI.q.trim().toLowerCase(), yr = today().slice(0, 4);
+  const list = all.filter(e => !q || [e.name, e.staffNo, posName(e), e.dept].join(' ').toLowerCase().includes(q));
+  const tools = `<input type="search" id="empSearch" placeholder="Cari nama, no. staf, jawatan" value="${esc(UI.q)}" style="width:230px"><button class="btn primary" data-act="emp-new">Tambah pekerja</button>`;
+  if (!all.length) return head('Pekerja', '', tools) + noEmp();
+  return head('Pekerja', `${emps().length} aktif`, tools) + sampleBanner() + `
+  <section class="panel"><div class="tbl-wrap"><table><thead><tr><th>Pekerja</th><th>Jawatan</th><th>Jabatan</th><th>Tarikh mula</th><th class="num">Baki cuti tahunan</th><th class="num">Target bulanan</th><th class="num">Amaran</th><th>Status</th><th></th></tr></thead><tbody>
+  ${list.map(e => { const a = alSummary(e, yr), t = targetOf(e, today().slice(0, 7)); const wc = Object.values(S.warnings).filter(w => w.empId === e.id).length; return `<tr>
+    <td>${who(e, e.staffNo)}</td><td>${esc(posName(e))}</td><td>${esc(e.dept || '—')}</td><td>${fmtDate(e.joinDate)}</td>
+    <td class="num mono">${a.balance} / ${a.days}</td><td class="num mono">${t.target != null ? num(t.target) + ' ' + esc(t.unit) : '—'}</td>
+    <td class="num">${wc ? `<span class="chip ${wc >= 3 ? 'bad' : 'warn'}">${wc}</span>` : '<span class="muted">0</span>'}</td>
+    <td><span class="chip ${e.status === 'Berhenti' ? '' : 'ok'}">${esc(e.status || 'Aktif')}</span></td>
+    <td><div class="row-actions"><button class="btn sm" data-act="emp-edit" data-id="${e.id}">Buka</button></div></td></tr>`; }).join('') || '<tr><td colspan="9" class="empty">Tiada pekerja sepadan.</td></tr>'}
+  </tbody></table></div></section>`;
+}
+
+function viewPositions() {
+  const ps = positions();
+  return head('Jawatan', 'Setiap jawatan boleh ada kelayakan cuti tahunan dan target bulanan sendiri', `<button class="btn primary" data-act="pos-new">Tambah jawatan</button>`) + `
+  <section class="panel">${ps.length ? `<div class="tbl-wrap"><table><thead><tr><th>Jawatan</th><th class="num">Cuti tahunan</th><th class="num">Target bulanan</th><th class="num">Pekerja</th><th></th></tr></thead><tbody>
+  ${ps.map(p => `<tr><td><b>${esc(p.name)}</b>${p.sample ? '<span class="tag">Contoh</span>' : ''}${p.desc ? `<div class="src">${esc(p.desc)}</div>` : ''}</td>
+    <td class="num mono">${p.alDays !== '' && p.alDays != null ? p.alDays + ' hari' : '<span class="muted">Ikut Akta</span>'}</td>
+    <td class="num mono">${p.target !== '' && p.target != null ? num(p.target) + ' ' + esc(p.unit || '') : '<span class="muted">—</span>'}</td>
+    <td class="num mono">${emps().filter(e => e.positionId === p.id).length}</td>
+    <td><div class="row-actions"><button class="btn sm" data-act="pos-edit" data-id="${p.id}">Ubah</button></div></td></tr>`).join('')}
+  </tbody></table></div>` : `<div class="empty"><b>Belum ada jawatan</b>Contoh: Eksekutif Jualan, 14 hari cuti tahunan, target RM 30,000 sebulan.<br><button class="btn primary" data-act="pos-new">Tambah jawatan</button></div>`}</section>`;
 }
 
 function viewSettings() {
-  const s = S.settings;
-  const hol = (s.holidays || []).slice().sort((a, b) => a.date.localeCompare(b.date));
-  return head('Tetapan', 'Waktu kerja, cuti umum dan maklumat syarikat') + `
-  <div class="cols">
-  <section class="panel"><div class="panel-h"><h2>Syarikat & waktu kerja</h2></div><form class="panel-b" id="settingsForm" style="display:flex;flex-direction:column;gap:14px">
+  const s = S.settings, hol = (s.holidays || []).slice().sort((a, b) => a.date.localeCompare(b.date));
+  const n = (id, k, label, min, max, hint) => `<div class="field"><label for="${id}">${label}</label><input type="number" id="${id}" name="${k}" min="${min}" max="${max}" value="${esc(s[k])}"><span class="note">${hint}</span></div>`;
+  return head('Tetapan', 'Had amaran, hari bekerja dan cuti umum') + `
+  <form class="panel" id="settingsForm"><div class="panel-h"><h2>Syarikat & had amaran</h2></div><div class="panel-b" style="display:flex;flex-direction:column;gap:14px">
     <div class="field"><label for="setCo">Nama syarikat</label><input type="text" id="setCo" name="company" value="${esc(s.company)}" required></div>
     <div class="grid3">
-      <div class="field"><label for="setStart">Masa mula kerja</label><input type="time" id="setStart" name="start" value="${esc(s.start)}" required></div>
-      <div class="field"><label for="setEnd">Masa tamat kerja</label><input type="time" id="setEnd" name="end" value="${esc(s.end)}" required></div>
-      <div class="field"><label for="setGrace">Tempoh ihsan (minit)</label><input type="number" id="setGrace" name="grace" min="0" max="120" value="${esc(s.grace)}"></div>
+      ${n('setLow', 'lowBal', 'Baki cuti rendah (hari)', 0, 30, 'Amaran bila baki cuti tahunan sama atau kurang.')}
+      ${n('setMin', 'targetMin', 'Target minimum (%)', 0, 100, 'Bawah peratus ini dikira tidak capai.')}
+      ${n('setStreak', 'missStreak', 'Bulan berturut = serius', 1, 12, 'Gagal target berturut-turut dianggap serius.')}
+      ${n('setNotice', 'noticeDays', 'Notis cuti tahunan (hari)', 0, 60, 'Mohon kurang dari ini mencetuskan amaran.')}
+      ${n('setPend', 'pendingDays', 'Permohonan menunggu (hari)', 0, 30, 'Ingatkan HR bila belum diputuskan.')}
     </div>
-    <div class="field"><span class="lbl">Hari bekerja</span><div style="display:flex;flex-wrap:wrap;gap:6px 14px">${[1, 2, 3, 4, 5, 6, 0].map(d => `<label class="check"><input type="checkbox" name="wd" value="${d}" id="wd${d}" ${(s.workdays || []).includes(d) ? 'checked' : ''}>${DAYS[d]}</label>`).join('')}</div>
-      <span class="note">Untuk negeri dengan hujung minggu Jumaat–Sabtu (contohnya Kelantan, Terengganu, Kedah), pilih Ahad hingga Khamis.</span></div>
-    <div class="field" style="max-width:220px"><label for="setEl">Cuti kecemasan setahun (hari)</label><input type="number" id="setEl" name="elDays" min="0" max="30" value="${esc(s.elDays)}"></div>
+    <div class="field"><span class="lbl">Hari bekerja (untuk kiraan hari cuti)</span><div style="display:flex;flex-wrap:wrap;gap:6px 14px">${[1, 2, 3, 4, 5, 6, 0].map(d => `<label class="check"><input type="checkbox" name="wd" value="${d}" id="wd${d}" ${(s.workdays || []).includes(d) ? 'checked' : ''}>${DAYS[d]}</label>`).join('')}</div></div>
     <div><button class="btn primary" type="submit" ${readOnly ? 'disabled' : ''}>Simpan tetapan</button></div>
-  </form></section>
-  <section class="panel"><div class="panel-h"><h2>Cuti umum</h2><span class="note">${hol.length} tarikh</span></div>
-    <form class="panel-b" id="holForm" style="display:grid;grid-template-columns:minmax(0,140px) minmax(0,1fr) auto;gap:8px;align-items:end;border-bottom:1px solid var(--line)">
+  </div></form>
+  <section class="panel"><div class="panel-h"><h2>Cuti umum</h2><span class="note">Tidak dikira sebagai hari cuti tahunan</span></div>
+    <form class="panel-b" id="holForm" style="display:grid;grid-template-columns:minmax(0,150px) minmax(0,1fr) auto;gap:8px;align-items:end;border-bottom:1px solid var(--line)">
       <div class="field"><label for="holDate">Tarikh</label><input type="date" id="holDate" required></div>
       <div class="field"><label for="holName">Nama</label><input type="text" id="holName" placeholder="cth. Hari Raya Aidilfitri" required></div>
-      <button class="btn" type="submit" ${readOnly ? 'disabled' : ''}>Tambah</button>
-    </form>
-    <div class="list">${hol.length ? hol.map(h => `<div class="li"><span class="mono" style="width:110px">${fmtDate(h.date)}</span><span class="grow">${esc(h.name)}</span><button class="btn sm ghost" data-act="hol-del" data-d="${h.date}" aria-label="Buang ${esc(h.name)}">Buang</button></div>`).join('') : '<div class="empty">Tambah cuti umum negeri anda supaya ia tidak dikira sebagai hari bekerja.</div>'}</div>
-  </section>
-  </div>
-  <section class="panel"><div class="panel-h"><h2>Data</h2></div><div class="panel-b" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center">
-    <span class="note grow" style="flex:1 1 280px">${MODE === 'db' ? 'Data disimpan bersama halaman ini dan dikongsi dengan semua yang anda beri akses Contributor.' : 'Data disimpan dalam pelayar ini sahaja. Buka halaman melalui pautan Claude untuk berkongsi dengan pasukan.'}</span>
-    ${Object.values(S.employees).some(e => e.sample) ? '<button class="btn" data-act="clear-sample">Buang data contoh</button>' : '<button class="btn" data-act="load-sample">Muat data contoh</button>'}
-  </div></section>`;
+      <button class="btn" type="submit" ${readOnly ? 'disabled' : ''}>Tambah</button></form>
+    <div class="list">${hol.length ? hol.map(h => `<div class="li"><span class="mono" style="width:110px">${fmtDate(h.date)}</span><span class="grow">${esc(h.name)}</span><button class="btn sm ghost" data-act="hol-del" data-d="${h.date}">Buang</button></div>`).join('') : '<div class="empty">Belum ada cuti umum.</div>'}</div></section>
+  <section class="panel"><div class="panel-b" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center"><span class="note" style="flex:1 1 280px">${MODE === 'db' ? 'Data disimpan bersama halaman ini dan dikongsi dengan sesiapa yang anda beri akses Contributor.' : 'Data disimpan dalam pelayar ini sahaja.'}</span>
+    ${Object.values(S.employees).some(e => e.sample) ? '<button class="btn" data-act="clear-sample">Buang data contoh</button>' : '<button class="btn" data-act="load-sample">Muat data contoh</button>'}</div></section>`;
 }
 
 let renderQueued = false;
 function scheduleRender() { if (renderQueued) return; renderQueued = true; requestAnimationFrame(() => { renderQueued = false; render(); }); }
 function render() {
   renderNav();
-  const main = $('#main');
-  const act = document.activeElement, focusId = act && main.contains(act) ? act.id : null, sel = focusId && act.selectionStart != null ? [act.selectionStart, act.selectionEnd] : null;
-  const wait = loadingOrEmpty();
-  main.innerHTML = wait || ({ dashboard: viewDashboard, attendance: viewAttendance, employees: viewEmployees, leave: viewLeave, payroll: viewPayroll, settings: viewSettings }[UI.view] || viewDashboard)();
+  const main = $('#main'), act = document.activeElement;
+  const focusId = act && main.contains(act) ? act.id : null, sel = focusId && act.selectionStart != null ? [act.selectionStart, act.selectionEnd] : null;
+  main.innerHTML = COLLS.some(c => !S.loaded[c]) ? `<div class="panel"><div class="empty"><b>Memuatkan data…</b>Baki cuti, permohonan, target dan amaran akan muncul sebentar lagi.</div></div>`
+    : ({ dashboard: viewDashboard, attendance: viewAttendance, leave: viewLeave, target: viewTarget, warnings: viewWarnings, employees: viewEmployees, positions: viewPositions, settings: viewSettings }[UI.view] || viewDashboard)();
   if (focusId) { const el = document.getElementById(focusId); if (el) { el.focus(); if (sel) try { el.setSelectionRange(sel[0], sel[1]); } catch (e) {} } }
-  if (MODAL.refresh) MODAL.refresh();
 }
 
-/* ---------- modal ---------- */
-const MODAL = { refresh: null };
-function openModal(html, { wide = false, onMount } = {}) {
+/* ---------- modals ---------- */
+const MODAL = {};
+function openModal(html, wide) {
   $('#modalRoot').innerHTML = `<div class="scrim" data-act="modal-scrim"><div class="modal ${wide ? 'wide' : ''}" role="dialog" aria-modal="true">${html}</div></div>`;
-  const first = $('#modalRoot').querySelector('input:not([type=hidden]), select, textarea, button');
-  if (first) first.focus();
-  if (onMount) onMount($('#modalRoot .modal'));
+  const first = $('#modalRoot').querySelector('input:not([type=hidden]), select, textarea'); if (first) first.focus();
 }
-function closeModal() { $('#modalRoot').innerHTML = ''; MODAL.refresh = null; }
+function closeModal() { $('#modalRoot').innerHTML = ''; }
 const mh = t => `<div class="modal-h"><h3>${esc(t)}</h3><button class="btn ghost sm" data-act="modal-close" aria-label="Tutup">✕</button></div>`;
+const foot = (label, extra = '') => `<div class="modal-f">${extra}<button type="button" class="btn" data-act="modal-close">Batal</button><button type="submit" class="btn primary" ${readOnly ? 'disabled' : ''}>${label}</button></div>`;
+function confirmModal(title, body, okLabel, onOk) {
+  openModal(mh(title) + `<div class="modal-b"><p style="margin:0">${body}</p></div><div class="modal-f"><button class="btn" data-act="modal-close">Batal</button><button class="btn danger armed" data-act="confirm-ok">${esc(okLabel)}</button></div>`);
+  MODAL.onOk = onOk;
+}
 
 function empModal(id) {
-  const e = id ? clone(S.employees[id]) : { staffNo: nextStaffNo(), status: 'Aktif', type: 'Tetap', joinDate: today(), epf: true };
-  const yr = today().slice(0, 4);
-  const depts = [...new Set(Object.values(S.employees).map(x => x.dept).filter(Boolean))];
-  const bal = id ? `<div class="bal">${['AL', 'MC', 'EL'].map(t => { const ent = entitlement(e, t, yr), used = leaveUsed(id, t, yr); return `<div><small>${LEAVE[t].name}</small><b>${r2(ent - used)} <small>/ ${ent} hari</small></b></div>`; }).join('')}</div>` : '';
-  openModal(mh(id ? e.name : 'Pekerja baharu') + `<form id="empForm"><div class="modal-b">${bal}
+  const e = id ? clone(S.employees[id]) : { staffNo: nextStaffNo(), status: 'Aktif', joinDate: today(), positionId: positions()[0]?.id || '' };
+  const yr = today().slice(0, 4), a = id ? alSummary(S.employees[id], yr) : null;
+  openModal(mh(id ? e.name : 'Pekerja baharu') + `<form id="empForm"><div class="modal-b">
+    ${a ? `<div class="bal"><div><small>Kelayakan ${yr}</small><b>${a.days} hari</b></div><div><small>Diambil</small><b>${a.taken} hari</b></div><div><small>Baki</small><b>${a.balance} hari</b></div></div>` : ''}
     <div class="grid2">
       <div class="field span2"><label for="fName">Nama penuh</label><input type="text" id="fName" name="name" value="${esc(e.name)}" required></div>
       <div class="field"><label for="fNo">No. staf</label><input type="text" id="fNo" name="staffNo" value="${esc(e.staffNo)}" required></div>
-      <div class="field"><label for="fIc">No. kad pengenalan</label><input type="text" id="fIc" name="ic" value="${esc(e.ic)}" placeholder="900101-14-5678"></div>
-      <div class="field"><label for="fPhone">Telefon</label><input type="tel" id="fPhone" name="phone" value="${esc(e.phone)}"></div>
-      <div class="field"><label for="fEmail">E-mel</label><input type="email" id="fEmail" name="email" value="${esc(e.email)}"></div>
-      <div class="field"><label for="fDept">Jabatan</label><input type="text" id="fDept" name="dept" value="${esc(e.dept)}" list="deptList"><datalist id="deptList">${depts.map(d => `<option value="${esc(d)}">`).join('')}</datalist></div>
-      <div class="field"><label for="fPos">Jawatan</label><input type="text" id="fPos" name="position" value="${esc(e.position)}"></div>
-      <div class="field"><label for="fType">Jenis pekerjaan</label><select id="fType" name="type">${['Tetap', 'Kontrak', 'Sambilan', 'Pelatih'].map(t => `<option ${e.type === t ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
-      <div class="field"><label for="fStatus">Status</label><select id="fStatus" name="status">${['Aktif', 'Berhenti'].map(t => `<option ${e.status === t ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
+      <div class="field"><label for="fPos">Jawatan</label><select id="fPos" name="positionId"><option value="">— Pilih jawatan —</option>${positions().map(p => `<option value="${p.id}" ${p.id === e.positionId ? 'selected' : ''}>${esc(p.name)}</option>`).join('')}</select>${positions().length ? '' : '<span class="note">Tambah jawatan dahulu di menu Jawatan.</span>'}</div>
+      <div class="field"><label for="fDept">Jabatan</label><input type="text" id="fDept" name="dept" value="${esc(e.dept)}"></div>
       <div class="field"><label for="fJoin">Tarikh mula</label><input type="date" id="fJoin" name="joinDate" value="${esc(e.joinDate)}" required></div>
-      <div class="field"><label for="fEnd">Tarikh berhenti</label><input type="date" id="fEnd" name="endDate" value="${esc(e.endDate)}"></div>
-      <div class="field"><label for="fSal">Gaji pokok (RM / bulan)</label><input type="number" step="0.01" min="0" id="fSal" name="salary" value="${esc(e.salary)}" required></div>
-      <div class="field"><label for="fAllow">Elaun tetap (RM / bulan)</label><input type="number" step="0.01" min="0" id="fAllow" name="allowance" value="${esc(e.allowance)}"></div>
-      <div class="field"><label for="fBank">Bank</label><input type="text" id="fBank" name="bank" value="${esc(e.bank)}" placeholder="Maybank"></div>
-      <div class="field"><label for="fAcc">No. akaun</label><input type="text" id="fAcc" name="bankAcc" value="${esc(e.bankAcc)}"></div>
-      <div class="field"><label for="fEpf">No. KWSP</label><input type="text" id="fEpf" name="epfNo" value="${esc(e.epfNo)}"></div>
-      <div class="field"><label for="fAl">Cuti tahunan (hari, kosongkan untuk ikut Akta)</label><input type="number" min="0" max="60" id="fAl" name="alDays" value="${esc(e.alDays)}"></div>
-      <label class="check span2"><input type="checkbox" id="fEpfOn" name="epf" ${e.epf !== false ? 'checked' : ''}> Caruman KWSP dipotong daripada gaji</label>
-    </div></div>
-    <div class="modal-f">${id ? `<button type="button" class="btn danger left" data-act="emp-del" data-id="${id}">Padam rekod</button>` : ''}<button type="button" class="btn" data-act="modal-close">Batal</button><button type="submit" class="btn primary" ${readOnly ? 'disabled' : ''}>${id ? 'Simpan' : 'Tambah pekerja'}</button></div></form>`, { wide: true });
+      <div class="field"><label for="fAl">Cuti tahunan khas (hari)</label><input type="number" min="0" max="60" step="0.5" id="fAl" name="alDays" value="${esc(e.alDays)}" placeholder="Ikut jawatan"></div>
+      <div class="field"><label for="fTgt">Target bulanan khas</label><input type="number" min="0" step="any" id="fTgt" name="target" value="${esc(e.target)}" placeholder="Ikut jawatan"></div>
+      <div class="field"><label for="fPay">Jenis gaji</label><select id="fPay" name="payType">${['Bulanan', 'Harian'].map(t => `<option ${(e.payType || 'Bulanan') === t ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
+      <div class="field"><label for="fRate">Gaji pokok / kadar harian (RM)</label><input type="number" min="0" step="0.01" id="fRate" name="rate" value="${esc(e.rate)}" placeholder="Pilihan"></div>
+      <div class="field"><label for="fStatus">Status</label><select id="fStatus" name="status">${['Aktif', 'Berhenti'].map(t => `<option ${e.status === t ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
+    </div></div>${foot(id ? 'Simpan' : 'Tambah pekerja', id ? `<button type="button" class="btn danger left" data-act="emp-del" data-id="${id}">Padam</button>` : '')}</form>`, true);
   $('#empForm').addEventListener('submit', ev => {
-    ev.preventDefault();
-    const f = new FormData(ev.target), o = { ...e };
-    ['name', 'staffNo', 'ic', 'phone', 'email', 'dept', 'position', 'type', 'status', 'joinDate', 'endDate', 'bank', 'bankAcc', 'epfNo'].forEach(k => o[k] = String(f.get(k) || '').trim());
-    o.salary = Number(f.get('salary')) || 0; o.allowance = Number(f.get('allowance')) || 0;
+    ev.preventDefault(); const f = new FormData(ev.target), o = { ...e };
+    ['name', 'staffNo', 'positionId', 'dept', 'joinDate', 'status', 'payType'].forEach(k => o[k] = String(f.get(k) || '').trim());
+    o.rate = f.get('rate') === '' ? '' : Number(f.get('rate'));
+    if (o.status === 'Berhenti' && !o.endDate) o.endDate = today(); if (o.status !== 'Berhenti') delete o.endDate;
     o.alDays = f.get('alDays') === '' ? '' : Number(f.get('alDays'));
-    o.epf = !!f.get('epf');
-    if (o.status === 'Berhenti' && !o.endDate) o.endDate = today();
-    const newId = id || uid(); delete o.id;
-    closeModal();
-    run(put('employees', newId, o), id ? 'Rekod pekerja disimpan' : `${o.name} ditambah`);
+    o.target = f.get('target') === '' ? '' : Number(f.get('target'));
+    o.position = S.positions[o.positionId]?.name || '';
+    closeModal(); run(put('employees', id || uid(), o), id ? 'Rekod pekerja disimpan' : `${o.name} ditambah`);
   });
 }
 function nextStaffNo() {
   const n = Object.values(S.employees).map(e => parseInt(String(e.staffNo || '').replace(/\D/g, ''), 10)).filter(Number.isFinite);
   return 'P' + String((n.length ? Math.max(...n) : 0) + 1).padStart(3, '0');
 }
-
-function attModal(empId, date) {
-  const e = empById(empId), rec = recOf(empId, date) || {};
-  openModal(mh('Ubah kehadiran') + `<form id="attForm"><div class="modal-b">
-    ${who(e, fmtDateLong(date))}
-    <div class="grid2"><div class="field"><label for="aIn">Masa masuk</label><input type="time" id="aIn" value="${esc(rec.in)}"></div><div class="field"><label for="aOut">Masa keluar</label><input type="time" id="aOut" value="${esc(rec.out)}"></div></div>
-    <div class="field"><label for="aNote">Catatan</label><input type="text" id="aNote" value="${esc(rec.note)}" placeholder="cth. Mesyuarat luar, lupa punch"></div>
-    <p class="note">Untuk cuti, gunakan modul Cuti supaya baki cuti dikemas kini.</p>
-  </div><div class="modal-f">${rec.in || rec.out || rec.note ? '<button type="button" class="btn danger left" data-act="att-clear">Kosongkan rekod</button>' : ''}<button type="button" class="btn" data-act="modal-close">Batal</button><button type="submit" class="btn primary" ${readOnly ? 'disabled' : ''}>Simpan</button></div></form>`);
-  $('#attForm').addEventListener('submit', ev => {
+function posModal(id) {
+  const p = id ? clone(S.positions[id]) : { alDays: '', target: '', unit: 'RM' };
+  const used = id ? emps(true).filter(e => e.positionId === id).length : 0;
+  openModal(mh(id ? 'Ubah jawatan' : 'Jawatan baharu') + `<form id="posForm"><div class="modal-b"><div class="grid2">
+    <div class="field span2"><label for="pName">Nama jawatan</label><input type="text" id="pName" value="${esc(p.name)}" required placeholder="cth. Eksekutif Jualan"></div>
+    <div class="field"><label for="pAl">Cuti tahunan (hari setahun)</label><input type="number" min="0" max="60" step="0.5" id="pAl" value="${esc(p.alDays)}" placeholder="Ikut Akta Kerja"><span class="note">Kosongkan untuk 8/12/16 hari ikut tempoh khidmat.</span></div>
+    <div class="field"><label for="pTgt">Target bulanan</label><input type="number" min="0" step="any" id="pTgt" value="${esc(p.target)}" placeholder="Tiada target"></div>
+    <div class="field"><label for="pUnit">Unit target</label><input type="text" id="pUnit" value="${esc(p.unit)}" placeholder="RM, unit, pelanggan" list="unitList"><datalist id="unitList"><option value="RM"><option value="unit"><option value="pelanggan"><option value="tugasan"></datalist></div>
+    <div class="field"><label for="pDesc">Keterangan</label><input type="text" id="pDesc" value="${esc(p.desc)}"></div>
+  </div></div>${foot(id ? 'Simpan' : 'Tambah jawatan', id ? `<button type="button" class="btn danger left" data-act="pos-del" data-id="${id}" ${used ? `disabled title="${used} pekerja masih memegang jawatan ini"` : ''}>Padam</button>` : '')}</form>`);
+  $('#posForm').addEventListener('submit', ev => {
     ev.preventDefault();
-    const r = { in: $('#aIn').value || '', out: $('#aOut').value || '', note: $('#aNote').value.trim() };
-    if (r.in && r.out && r.out < r.in) { toast('Masa keluar mesti selepas masa masuk.'); return; }
-    closeModal();
-    run(putAttendance(date, empId, (r.in || r.out || r.note) ? r : null), 'Kehadiran disimpan');
+    const o = { ...p, name: $('#pName').value.trim(), alDays: $('#pAl').value === '' ? '' : Number($('#pAl').value), target: $('#pTgt').value === '' ? '' : Number($('#pTgt').value), unit: $('#pUnit').value.trim(), desc: $('#pDesc').value.trim() };
+    closeModal(); run(put('positions', id || uid(), o), 'Jawatan disimpan');
   });
-  MODAL.clearAtt = () => { closeModal(); run(putAttendance(date, empId, null), 'Rekod dikosongkan'); };
 }
-
 function leaveModal(id) {
-  const l = id ? clone(S.leaves[id]) : { empId: emps()[0]?.id, type: 'AL', from: addDays(today(), 1), to: addDays(today(), 1), status: 'Menunggu' };
-  openModal(mh(id ? 'Ubah cuti' : 'Permohonan cuti') + `<form id="leaveForm"><div class="modal-b">
-    <div class="grid2">
-      <div class="field span2"><label for="lEmp">Pekerja</label><select id="lEmp">${emps(!!id).map(e => `<option value="${e.id}" ${e.id === l.empId ? 'selected' : ''}>${esc(e.staffNo)} · ${esc(e.name)}</option>`).join('')}</select></div>
-      <div class="field"><label for="lType">Jenis cuti</label><select id="lType">${Object.entries(LEAVE).map(([k, v]) => `<option value="${k}" ${l.type === k ? 'selected' : ''}>${v.name}</option>`).join('')}</select></div>
-      <div class="field"><label for="lStatus">Status</label><select id="lStatus">${['Menunggu', 'Diluluskan', 'Ditolak'].map(s => `<option ${l.status === s ? 'selected' : ''}>${s}</option>`).join('')}</select></div>
-      <div class="field"><label for="lFrom">Dari</label><input type="date" id="lFrom" value="${esc(l.from)}" required></div>
-      <div class="field"><label for="lTo">Hingga</label><input type="date" id="lTo" value="${esc(l.to)}" required></div>
-      <label class="check span2"><input type="checkbox" id="lHalf" ${l.half ? 'checked' : ''}> Separuh hari (untuk cuti satu hari)</label>
-      <div class="field span2"><label for="lReason">Sebab</label><textarea id="lReason" placeholder="cth. Urusan keluarga">${esc(l.reason)}</textarea></div>
-    </div>
-    <div id="leaveCalc" class="note"></div>
-  </div><div class="modal-f">${id ? `<button type="button" class="btn danger left" data-act="leave-del" data-id="${id}">Padam</button>` : ''}<button type="button" class="btn" data-act="modal-close">Batal</button><button type="submit" class="btn primary" ${readOnly ? 'disabled' : ''}>${id ? 'Simpan' : 'Hantar permohonan'}</button></div></form>`);
+  const l = id ? clone(S.leaves[id]) : { empId: emps()[0]?.id, type: 'AL', from: addDays(today(), 7), to: addDays(today(), 7), status: 'Menunggu' };
+  openModal(mh(id ? 'Ubah permohonan cuti' : 'Mohon cuti') + `<form id="leaveForm"><div class="modal-b"><div class="grid2">
+    <div class="field span2"><label for="lEmp">Pekerja</label><select id="lEmp">${emps(!!id).map(e => `<option value="${e.id}" ${e.id === l.empId ? 'selected' : ''}>${esc(e.staffNo)} · ${esc(e.name)}</option>`).join('')}</select></div>
+    <div class="field"><label for="lType">Jenis cuti</label><select id="lType">${Object.entries(LEAVE).map(([k, v]) => `<option value="${k}" ${l.type === k ? 'selected' : ''}>${v}</option>`).join('')}</select></div>
+    <div class="field"><label for="lStatus">Status</label><select id="lStatus">${['Menunggu', 'Diluluskan', 'Ditolak'].map(s => `<option ${l.status === s ? 'selected' : ''}>${s}</option>`).join('')}</select></div>
+    <div class="field"><label for="lFrom">Dari</label><input type="date" id="lFrom" value="${esc(l.from)}" required></div>
+    <div class="field"><label for="lTo">Hingga</label><input type="date" id="lTo" value="${esc(l.to)}" required></div>
+    <label class="check span2"><input type="checkbox" id="lHalf" ${l.half ? 'checked' : ''}> Separuh hari</label>
+    <div class="field span2"><label for="lReason">Sebab</label><textarea id="lReason" placeholder="cth. Urusan keluarga">${esc(l.reason)}</textarea></div>
+  </div><div id="leaveCalc" class="note"></div></div>${foot(id ? 'Simpan' : 'Hantar permohonan', id ? `<button type="button" class="btn danger left" data-act="leave-del" data-id="${id}">Padam</button>` : '')}</form>`);
   const read = () => ({ ...l, empId: $('#lEmp').value, type: $('#lType').value, status: $('#lStatus').value, from: $('#lFrom').value, to: $('#lTo').value, half: $('#lHalf').checked, reason: $('#lReason').value.trim() });
   const calc = () => {
-    const x = read(); if (x.to < x.from) { $('#leaveCalc').innerHTML = '<span class="warnline">Tarikh akhir mesti sama atau selepas tarikh mula.</span>'; return; }
-    const days = leaveDays(x), e = empById(x.empId), yr = x.from.slice(0, 4), ent = e ? entitlement(e, x.type, yr) : null;
-    const used = leaveUsed(x.empId, x.type, yr) - (id && S.leaves[id].status === 'Diluluskan' && S.leaves[id].type === x.type ? Number(S.leaves[id].days) : 0);
-    $('#leaveCalc').innerHTML = `<b>${days} hari bekerja</b> (tidak termasuk hari rehat dan cuti umum).` + (ent != null ? ` Baki ${LEAVE[x.type].name.toLowerCase()} ${yr}: ${r2(ent - used)} hari.` + (days > ent - used ? ' <span class="warnline">Permohonan ini melebihi baki.</span>' : '') : '');
+    const x = read(); if (!x.from || !x.to || x.to < x.from) { $('#leaveCalc').innerHTML = '<span class="warnline">Tarikh akhir mesti sama atau selepas tarikh mula.</span>'; return; }
+    const days = leaveDays(x), e = empById(x.empId); let msg = `<b>${days} hari bekerja</b> (tidak termasuk hari rehat dan cuti umum).`;
+    if (x.type === 'AL' && e) {
+      const a = alSummary(e, x.from.slice(0, 4)); const own = id && S.leaves[id].type === 'AL' && S.leaves[id].status === 'Diluluskan' ? Number(S.leaves[id].days) : 0;
+      const bal = r2(a.balance + own); msg += ` Baki cuti tahunan: ${bal} hari, selepas ini ${r2(bal - days)} hari.`;
+      if (bal - days < 0) msg += ' <span class="warnline">⚠ Melebihi baki cuti tahunan.</span>';
+      if (daysBetween(today(), x.from) < (Number(S.settings.noticeDays) || 0) && !id) msg += ` <span class="warnline">⚠ Notis kurang daripada ${S.settings.noticeDays} hari.</span>`;
+    }
+    $('#leaveCalc').innerHTML = msg;
   };
   $('#leaveForm').addEventListener('input', calc); calc();
   $('#leaveForm').addEventListener('submit', ev => {
-    ev.preventDefault();
-    const x = read(); if (x.to < x.from) { toast('Semak tarikh cuti.'); return; }
+    ev.preventDefault(); const x = read(); if (x.to < x.from) { toast('Semak tarikh cuti.'); return; }
     x.days = leaveDays(x); if (!x.days) { toast('Tempoh ini tiada hari bekerja.'); return; }
-    if (!x.half || x.from !== x.to) x.half = false;
-    const nid = id || uid(); delete x.id;
+    if (x.from !== x.to) x.half = false;
     if (!id) x.createdAt = new Date().toISOString();
     if (x.status !== 'Menunggu' && (!id || S.leaves[id].status !== x.status)) x.decidedAt = new Date().toISOString();
-    closeModal();
-    run(put('leaves', nid, x), id ? 'Cuti dikemas kini' : 'Permohonan cuti dihantar');
+    closeModal(); run(put('leaves', id || uid(), x), id ? 'Cuti dikemas kini' : x.status === 'Menunggu' ? 'Permohonan dihantar — menunggu kelulusan' : 'Cuti direkod');
   });
 }
-
-function slipModal(empId) {
-  const ym = UI.payMonth, l = payLines(ym).find(x => x.empId === empId); if (!l) return;
-  const e = l.emp || {};
-  const html = slipHTML(l, e, ym);
-  openModal(mh('Slip gaji') + `<div class="modal-b">${html}</div><div class="modal-f">${canExport() ? `<button class="btn" data-act="slip-dl" data-emp="${empId}">Simpan slip (.html)</button>` : ''}<button class="btn primary" data-act="modal-close">Tutup</button></div>`, { wide: true });
-}
-function slipHTML(l, e, ym) {
-  const row = (k, v, neg) => v ? `<tr><td>${k}</td><td class="num mono">${neg ? '−' : ''}${money(v)}</td></tr>` : '';
-  return `<div class="slip"><div class="slip-top"><div><h4>${esc(S.settings.company)}</h4><span class="muted">Slip gaji · ${fmtMonth(ym)}</span></div><dl><dt>Nama</dt><dd>${esc(e.name)}</dd><dt>No. staf</dt><dd>${esc(e.staffNo)}</dd><dt>No. K/P</dt><dd>${esc(e.ic || '—')}</dd><dt>No. KWSP</dt><dd>${esc(e.epfNo || '—')}</dd><dt>Jawatan</dt><dd>${esc(e.position || '—')}</dd><dt>Bank</dt><dd>${esc([e.bank, e.bankAcc].filter(Boolean).join(' ') || '—')}</dd></dl></div>
-    <div class="slip-cols"><div><div class="eyebrow">Pendapatan</div><table>${row('Gaji pokok', l.basic)}${row('Elaun tetap', l.allowance)}${row('OT / elaun lain', l.otherAllow)}${row(`Cuti tanpa gaji (${l.ul} hari)`, l.ulDeduct, true)}<tr class="sum"><td>Gaji kasar</td><td class="num mono">${money(l.gross)}</td></tr></table></div>
-    <div><div class="eyebrow">Potongan</div><table>${row('KWSP (11%)', l.epfEe)}${row('PERKESO', l.socsoEe)}${row('SIP', l.eisEe)}${row('PCB', l.pcb)}${row('Potongan lain', l.otherDeduct)}<tr class="sum"><td>Jumlah potongan</td><td class="num mono">${money(l.totalDeduct)}</td></tr></table></div></div>
-    <div class="net"><span>Gaji bersih</span><b>${RM(l.net)}</b></div>
-    <div class="note">Caruman majikan: KWSP ${RM(l.epfEr)} · PERKESO ${RM(l.socsoEr)} · SIP ${RM(l.eisEr)}</div></div>`;
-}
-
-function confirmModal(title, body, okLabel, onOk) {
-  openModal(mh(title) + `<div class="modal-b"><p style="margin:0">${body}</p></div><div class="modal-f"><button class="btn" data-act="modal-close">Batal</button><button class="btn danger armed" data-act="confirm-ok">${esc(okLabel)}</button></div>`);
-  MODAL.onOk = onOk;
-}
-
-/* ---------- exports ---------- */
-const canExport = () => !!DL || MODE === 'local';
-const csv = rows => rows.map(r => r.map(v => { const s = String(v ?? ''); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }).join(',')).join('\n');
-async function saveFile(filename, data) {
-  if (DL) { try { await DL.save({ filename, data }); } catch (e) { if (e && e.code !== 'declined') toast('Fail tidak dapat disimpan di sini.'); } return; }
-  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([data], { type: filename.endsWith('.csv') ? 'text/csv' : 'text/html' })); a.download = filename; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
-}
-function exportAttendance() {
-  const ym = UI.month, dates = monthDates(ym);
-  const rows = [['No. staf', 'Nama', ...dates.map(d => d.slice(8)), 'Hadir', 'Lewat', 'Tidak hadir', 'Cuti', 'Jam']];
-  emps().forEach(e => { const s = monthSummary(e, ym); rows.push([e.staffNo, e.name, ...dates.map(d => dayStatus(e, d).code), s.H + s.L, s.L, s.TH, s.C, Math.round(s.mins / 60)]); });
-  saveFile(`kehadiran-${ym}.csv`, '﻿' + csv(rows));
-}
-function exportPayroll() {
-  const ym = UI.payMonth;
-  const rows = [['No. staf', 'Nama', 'No. K/P', 'Bank', 'No. akaun', 'Pokok', 'Elaun', 'OT/elaun lain', 'Potongan CTG', 'Kasar', 'KWSP pekerja', 'KWSP majikan', 'PERKESO pekerja', 'PERKESO majikan', 'SIP pekerja', 'SIP majikan', 'PCB', 'Potongan lain', 'Bersih']];
-  payLines(ym).forEach(l => rows.push([l.emp?.staffNo, l.emp?.name, l.emp?.ic, l.emp?.bank, l.emp?.bankAcc, l.basic, l.allowance, l.otherAllow, l.ulDeduct, l.gross, l.epfEe, l.epfEr, l.socsoEe, l.socsoEr, l.eisEe, l.eisEr, l.pcb, l.otherDeduct, l.net].map(v => typeof v === 'number' ? v.toFixed(2) : v)));
-  saveFile(`gaji-${ym}.csv`, '﻿' + csv(rows));
+function warnModal({ id, empId, key, reason } = {}) {
+  const w = id ? clone(S.warnings[id]) : { empId: empId || emps()[0]?.id, trigger: key || '', reason: reason || '', date: today() };
+  if (!id) { const n = Object.values(S.warnings).filter(x => x.empId === w.empId).length; w.level = WARN_LEVELS[Math.min(n, WARN_LEVELS.length - 1)]; }
+  const prior = Object.values(S.warnings).filter(x => x.empId === w.empId && x.id !== id).sort((a, b) => a.date.localeCompare(b.date));
+  openModal(mh(id ? 'Ubah rekod amaran' : 'Rekod amaran') + `<form id="warnForm"><div class="modal-b">
+    ${prior.length ? `<div class="note">Amaran terdahulu: ${prior.map(p => `${esc(p.level)} (${fmtDate(p.date)})`).join(', ')}</div>` : ''}
+    <div class="grid2">
+      <div class="field span2"><label for="wEmp">Pekerja</label><select id="wEmp" ${empId ? 'disabled' : ''}>${emps(true).map(e => `<option value="${e.id}" ${e.id === w.empId ? 'selected' : ''}>${esc(e.staffNo)} · ${esc(e.name)}</option>`).join('')}</select></div>
+      <div class="field"><label for="wLevel">Tahap</label><select id="wLevel">${WARN_LEVELS.map(l => `<option ${w.level === l ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
+      <div class="field"><label for="wDate">Tarikh</label><input type="date" id="wDate" value="${esc(w.date)}" required></div>
+      <div class="field span2"><label for="wReason">Sebab</label><textarea id="wReason" required>${esc(w.reason)}</textarea></div>
+    </div></div>${foot('Simpan amaran', id ? `<button type="button" class="btn danger left" data-act="warn-del" data-id="${id}">Padam</button>` : '')}</form>`);
+  $('#warnForm').addEventListener('submit', ev => {
+    ev.preventDefault();
+    const o = { ...w, empId: $('#wEmp').value, level: $('#wLevel').value, date: $('#wDate').value, reason: $('#wReason').value.trim() };
+    closeModal(); run(put('warnings', id || uid(), o), 'Amaran direkod');
+  });
 }
 
 /* ---------- sample data (marked sample: true so it can be removed in one step) ---------- */
 function buildSample(t) {
-  let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const ym = t.slice(0, 7), wd = d => [1, 2, 3, 4, 5].includes(parseISO(d).getDay());
+  const nextWd = (d, n) => { let c = 0; while (true) { d = addDays(d, 1); if (wd(d) && ++c >= n) return d; } };
+  const positions = {
+    'contoh-pos-1': { sample: true, name: 'Eksekutif Jualan', alDays: 14, target: 30000, unit: 'RM', desc: 'Jualan bulanan' },
+    'contoh-pos-2': { sample: true, name: 'Penyelia Operasi', alDays: 16, target: 120, unit: 'tugasan', desc: 'Tugasan selesai' },
+    'contoh-pos-3': { sample: true, name: 'Pembantu Stor', alDays: '', target: 400, unit: 'unit', desc: 'Pesanan dibungkus' },
+  };
   const people = [
-    ['Nurul Aisyah binti Rahman', 'Sumber Manusia', 'Eksekutif HR', '2019-03-04', 4200, 300],
-    ['Muhammad Hafiz bin Ismail', 'Operasi', 'Penyelia Operasi', '2021-07-12', 3800, 250],
-    ['Tan Mei Ling', 'Kewangan', 'Akauntan', '2017-01-09', 6200, 400],
-    ['Rajesh a/l Kumar', 'IT', 'Jurutera Perisian', '2023-02-20', 5500, 0],
-    ['Siti Hajar binti Osman', 'Jualan', 'Eksekutif Jualan', '2024-09-02', 3000, 500],
-    ['Lim Wei Jie', 'Operasi', 'Pembantu Stor', '2025-05-15', 2200, 150],
+    ['Nurul Aisyah binti Rahman', 'contoh-pos-1', 'Jualan', '2019-03-04', 0, 4200],
+    ['Muhammad Hafiz bin Ismail', 'contoh-pos-2', 'Operasi', '2021-07-12', 0, 3800],
+    ['Tan Mei Ling', 'contoh-pos-1', 'Jualan', '2017-01-09', 0, 6200],
+    ['Rajesh a/l Kumar', 'contoh-pos-3', 'Stor', '2023-02-20', 1, 95],
+    ['Siti Hajar binti Osman', 'contoh-pos-1', 'Jualan', '2024-09-02', 0, 3000],
+    ['Lim Wei Jie', 'contoh-pos-3', 'Stor', '2025-05-15', 1, 85],
   ];
   const employees = {};
-  people.forEach((p, i) => { const id = 'contoh-' + (i + 1); employees[id] = { sample: true, staffNo: 'P' + String(i + 1).padStart(3, '0'), name: p[0], dept: p[1], position: p[2], joinDate: p[3], salary: p[4], allowance: p[5], type: i === 5 ? 'Kontrak' : 'Tetap', status: 'Aktif', epf: true, phone: '01' + (2 + i) + '-' + (3000000 + i * 111111), ic: '', email: '', bank: 'Maybank', bankAcc: '1640' + (10000000 + i * 1234567), epfNo: '', alDays: '' }; });
-  const ids = Object.keys(employees);
-  const ym = t.slice(0, 7), leaves = {};
-  const addLeave = (n, empId, type, from, to, status, reason) => { leaves['contoh-cuti-' + n] = { sample: true, empId, type, from, to, half: false, status, reason, createdAt: from + 'T01:00:00.000Z' }; };
-  // pick workdays relative to today
-  const wds = []; for (let d = ym + '-01'; d < t; d = addDays(d, 1)) if ([1, 2, 3, 4, 5].includes(parseISO(d).getDay())) wds.push(d);
-  const future = []; for (let d = addDays(t, 1); future.length < 8; d = addDays(d, 1)) if ([1, 2, 3, 4, 5].includes(parseISO(d).getDay())) future.push(d);
-  if (wds.length > 4) addLeave(1, ids[2], 'AL', wds[wds.length - 4], wds[wds.length - 3], 'Diluluskan', 'Balik kampung');
-  if (wds.length > 6) addLeave(2, ids[4], 'MC', wds[3], wds[3], 'Diluluskan', 'Demam, sijil klinik');
-  addLeave(3, ids[1], 'AL', future[2], future[4], 'Menunggu', 'Majlis perkahwinan adik');
-  addLeave(4, ids[5], 'EL', future[0], future[0], 'Menunggu', 'Urusan keluarga');
-  addLeave(5, ids[3], 'AL', future[5], future[5], 'Diluluskan', 'Urusan peribadi');
-  const onLeave = (id, d) => Object.values(leaves).some(l => l.empId === id && l.status === 'Diluluskan' && l.from <= d && l.to >= d);
-  const attendance = {};
-  [...wds, t].forEach(d => {
-    if (![1, 2, 3, 4, 5].includes(parseISO(d).getDay())) return;
-    const records = {};
-    ids.forEach((id, i) => {
-      if (onLeave(id, d)) return;
-      const r = rnd();
-      if (d !== t && r < 0.04) return; // absent
-      if (d === t && i >= 4) return;   // not in yet today
-      const late = r > 0.86;
-      const inMin = 8 * 60 + 38 + Math.floor(rnd() * 20) + (late ? 25 + Math.floor(rnd() * 20) : 0);
-      const outMin = 18 * 60 + Math.floor(rnd() * 40);
-      records[id] = { in: pad(Math.floor(inMin / 60)) + ':' + pad(inMin % 60), out: d === t ? '' : pad(Math.floor(outMin / 60)) + ':' + pad(outMin % 60), note: late && rnd() > 0.5 ? 'Kesesakan jalan raya' : '' };
-    });
-    if (Object.keys(records).length) attendance[d] = { sample: true, date: d, records };
+  people.forEach((p, i) => { employees['contoh-' + (i + 1)] = { sample: true, staffNo: 'P' + pad(i + 1).padStart(3, '0'), name: p[0], positionId: p[1], position: positions[p[1]].name, dept: p[2], joinDate: p[3], status: 'Aktif', alDays: '', target: '', payType: p[4] ? 'Harian' : 'Bulanan', rate: p[5] }; });
+  const yr = t.slice(0, 4), leaves = {};
+  const L = (n, e, type, from, to, status, reason, created) => { leaves['contoh-cuti-' + n] = { sample: true, empId: 'contoh-' + e, type, from, to, half: false, status, reason, createdAt: created + 'T02:00:00.000Z' }; };
+  L(1, 3, 'AL', `${yr}-03-16`, `${yr}-03-20`, 'Diluluskan', 'Cuti sekolah', `${yr}-02-20`);
+  L(2, 3, 'AL', `${yr}-06-08`, `${yr}-06-12`, 'Diluluskan', 'Percutian keluarga', `${yr}-05-10`);
+  L(3, 3, 'AL', `${yr}-08-24`, `${yr}-08-26`, 'Diluluskan', 'Balik kampung', `${yr}-08-01`);
+  L(4, 1, 'AL', `${yr}-04-06`, `${yr}-04-08`, 'Diluluskan', 'Majlis keluarga', `${yr}-03-10`);
+  L(5, 5, 'AL', `${yr}-07-13`, `${yr}-07-17`, 'Diluluskan', 'Kenduri', `${yr}-06-15`);
+  L(6, 5, 'AL', `${yr}-09-07`, `${yr}-09-09`, 'Diluluskan', 'Urusan peribadi', `${yr}-09-05`);
+  const f1 = nextWd(t, 3), f2 = nextWd(t, 5), f3 = nextWd(t, 1);
+  L(7, 2, 'AL', f1, f2, 'Menunggu', 'Majlis perkahwinan adik', addDays(t, -4));
+  L(8, 6, 'AL', f3, f3, 'Menunggu', 'Urusan keluarga', t);
+  L(9, 4, 'MC', `${yr}-05-05`, `${yr}-05-05`, 'Diluluskan', 'Demam', `${yr}-05-05`);
+  L(10, 1, 'AL', nextWd(t, 10), nextWd(t, 11), 'Ditolak', 'Bertembung dengan pameran jualan', addDays(t, -2));
+  Object.values(leaves).forEach(l => { l.days = 0; for (let d = l.from; d <= l.to; d = addDays(d, 1)) if (wd(d)) l.days++; });
+  const pctPlan = { 1: [1.12, 1.05, 0.97], 2: [0.95, 1.01, 0.9], 3: [0.74, 0.7, 0.58], 4: [1.1, 1.2, 1.02], 5: [0.88, 0.76, 0.84], 6: [1.0, 0.9, 0.93] };
+  const targets = {};
+  [-2, -1, 0].forEach((off, k) => {
+    const m = shiftMonth(ym, off), entries = {};
+    Object.entries(employees).forEach(([id, e], i) => { const tg = positions[e.positionId].target; entries[id] = { actual: Math.round(tg * pctPlan[i + 1][k]) }; });
+    targets[m] = { sample: true, month: m, entries };
   });
-  Object.values(leaves).forEach(l => { l.days = 0; for (let d = l.from; d <= l.to; d = addDays(d, 1)) if ([1, 2, 3, 4, 5].includes(parseISO(d).getDay())) l.days++; });
-  return { employees, leaves, attendance };
+  const warnings = { 'contoh-amaran-1': { sample: true, empId: 'contoh-3', level: 'Amaran lisan', date: shiftMonth(ym, -1) + '-03', reason: `Tidak capai target ${fmtMonth(shiftMonth(ym, -2))} (74%).`, trigger: `tgt:contoh-3:${shiftMonth(ym, -2)}` } };
+  const kehadiran = {};
+  const wdays = m => monthDates(m).filter(d => wd(d) && d < t);
+  [-1, 0].forEach(off => {
+    const m = shiftMonth(ym, off), w = wdays(m), marks = {};
+    const put = (e, i, code) => { if (w[i]) { marks['contoh-' + e] = marks['contoh-' + e] || {}; marks['contoh-' + e][w[i].slice(8)] = code; } };
+    put(4, 2, 'TH'); put(6, 5, 'TH'); put(6, 11, 'H2'); put(2, 8, 'H2'); put(4, 14, 'TH');
+    const sat = monthDates(m).find(d => parseISO(d).getDay() === 6 && d < t); if (sat) { marks['contoh-4'] = marks['contoh-4'] || {}; marks['contoh-4'][sat.slice(8)] = 'HK'; }
+    kehadiran[m] = { sample: true, month: m, marks };
+  });
+  return { positions, employees, leaves, targets, warnings, kehadiran };
 }
 async function loadSample() {
   const data = buildSample(today());
-  const ops = [];
-  for (const c of ['employees', 'leaves', 'attendance']) for (const [id, v] of Object.entries(data[c])) {
-    if (c === 'attendance' && S.attendance[id]) { const merged = clone(S.attendance[id]); delete merged.id; Object.assign(merged.records, v.records); ops.push([c, id, merged]); }
-    else ops.push([c, id, v]);
+  for (const c of COLLS) for (const [id, v] of Object.entries(data[c] || {})) {
+    if (!DB) { S[c][id] = { ...v, id }; continue; }
+    if (!(await run(put(c, id, v)))) return;
   }
-  if (!DB) { ops.forEach(([c, id, v]) => S[c][id] = { ...v, id }); saveLocal(); render(); toast('Data contoh dimuatkan'); return; }
-  for (const [c, id, v] of ops) { if (!(await run(put(c, id, v)))) return; }
+  if (!DB) { saveLocal(); render(); }
   toast('Data contoh dimuatkan');
 }
 async function clearSample() {
-  const sampleIds = new Set(Object.values(S.employees).filter(e => e.sample).map(e => e.id || ''));
-  Object.entries(S.employees).forEach(([id, e]) => { if (e.sample) sampleIds.add(id); });
+  const ids = new Set(Object.entries(S.employees).filter(([, e]) => e.sample).map(([id]) => id));
   const ops = [];
-  Object.keys(S.employees).forEach(id => sampleIds.has(id) && ops.push(() => remove('employees', id)));
-  Object.entries(S.leaves).forEach(([id, l]) => (l.sample || sampleIds.has(l.empId)) && ops.push(() => remove('leaves', id)));
-  Object.entries(S.attendance).forEach(([id, a]) => {
-    const keep = Object.fromEntries(Object.entries(a.records || {}).filter(([k]) => !sampleIds.has(k)));
-    if (Object.keys(keep).length === Object.keys(a.records || {}).length) return;
-    const next = { date: a.date || id, records: keep };
-    ops.push(() => Object.keys(keep).length ? put('attendance', id, next) : remove('attendance', id));
-  });
-  Object.entries(S.payroll).forEach(([id, p]) => {
-    const has = Object.keys(p.inputs || {}).concat(Object.keys(p.lines || {})).some(k => sampleIds.has(k)); if (!has) return;
-    const next = clone(p); delete next.id; [next.inputs, next.lines].forEach(o => o && Object.keys(o).forEach(k => sampleIds.has(k) && delete o[k]));
-    ops.push(() => put('payroll', id, next));
-  });
-  for (const op of ops) { if (!(await run(op()))) return; }
+  ['employees', 'positions', 'targets', 'kehadiran'].forEach(c => Object.entries(S[c]).forEach(([id, v]) => {
+    if (c === 'kehadiran' && !v.sample) { const mk = clone(v.marks || {}); let hit = false; Object.keys(mk).forEach(k => { if (ids.has(k)) { delete mk[k]; hit = true; } }); if (hit) ops.push(() => put('kehadiran', id, { ...strip(v), marks: mk })); return; }
+    if (c === 'targets' && !v.sample) { const en = clone(v.entries || {}); let hit = false; Object.keys(en).forEach(k => { if (ids.has(k)) { delete en[k]; hit = true; } }); if (hit) ops.push(() => put('targets', id, { ...strip(v), entries: en })); return; }
+    if (v.sample) ops.push(() => remove(c, id));
+  }));
+  ['leaves', 'warnings'].forEach(c => Object.entries(S[c]).forEach(([id, v]) => (v.sample || ids.has(v.empId)) && ops.push(() => remove(c, id))));
+  for (const op of ops) if (!(await run(op()))) return;
   toast('Data contoh dibuang');
 }
 
-/* ---------- toast ---------- */
+/* ---------- export ---------- */
+const canExport = () => !!DL || MODE === 'local';
+const csv = rows => rows.map(r => r.map(v => { const x = String(v ?? ''); return /[",\n]/.test(x) ? '"' + x.replace(/"/g, '""') + '"' : x; }).join(',')).join('\n');
+async function exportAttendance() {
+  const ym = UI.month, dates = monthDates(ym);
+  const rows = [['No. staf', 'Nama', 'Jawatan', 'Jenis gaji', ...dates.map(d => d.slice(8)), 'Hari kerja', 'Hadir', 'Cuti bergaji', 'Tak dibayar', 'Hari rehat kerja', 'Hari dibayar', 'Anggaran gaji']];
+  emps().forEach(e => { const s = attSummary(e, ym); rows.push([e.staffNo, e.name, posName(e), e.payType || 'Bulanan', ...dates.map(d => dayCell(e, d).code), s.workdays, s.worked, s.leave + s.ph, s.unpaidTotal, s.extra, s.paid, s.pay == null ? '' : s.pay.toFixed(2)]); });
+  const data = '﻿' + csv(rows), filename = `kehadiran-${ym}.csv`;
+  if (DL) { try { await DL.save({ filename, data }); } catch (e) { if (e && e.code !== 'declined') toast('Fail tidak dapat disimpan di sini.'); } return; }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([data], { type: 'text/csv' })); a.download = filename; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+}
+
+/* ---------- toast & events ---------- */
 let toastTimer;
 function toast(msg) { $('#toastRoot').innerHTML = `<div class="toast" role="status">${esc(msg)}</div>`; clearTimeout(toastTimer); toastTimer = setTimeout(() => $('#toastRoot').innerHTML = '', 2800); }
-
-/* ---------- events ---------- */
-function persistUI() { try { localStorage.setItem('mejahr.ui', JSON.stringify({ view: UI.view })); } catch (e) {} }
 document.addEventListener('click', ev => {
   const el = ev.target.closest('[data-act]'); if (!el) return;
   const a = el.dataset.act, d = el.dataset;
   if (a === 'modal-scrim') { if (ev.target === el) closeModal(); return; }
   switch (a) {
-    case 'nav': UI.view = d.v; persistUI(); render(); window.scrollTo(0, 0); break;
+    case 'nav': UI.view = d.v; try { localStorage.setItem('mejahr.ui', JSON.stringify({ view: UI.view })); } catch (e) {} render(); window.scrollTo(0, 0); break;
     case 'modal-close': closeModal(); break;
     case 'confirm-ok': { const f = MODAL.onOk; closeModal(); f && f(); break; }
-    case 'att-tab': UI.attTab = d.t; render(); break;
-    case 'date-shift': UI.date = addDays(UI.date, Number(d.n)); render(); break;
-    case 'date-today': UI.date = today(); render(); break;
+    case 'year-shift': UI.year = String(Number(UI.year) + Number(d.n)); render(); break;
     case 'month-shift': UI.month = shiftMonth(UI.month, Number(d.n)); render(); break;
-    case 'pay-shift': UI.payMonth = shiftMonth(UI.payMonth, Number(d.n)); render(); break;
-    case 'clock-in': { const cur = recOf(d.emp, today()) || {}; const t = nowHM(); run(putAttendance(today(), d.emp, { in: t, out: cur.out || '', note: cur.note || '' }), `${empById(d.emp)?.name?.split(' ')[0]} masuk ${t}`); break; }
-    case 'clock-out': { const cur = recOf(d.emp, today()) || {}; const t = nowHM(); run(putAttendance(today(), d.emp, { in: cur.in || '', out: t, note: cur.note || '' }), `${empById(d.emp)?.name?.split(' ')[0]} keluar ${t}`); break; }
-    case 'att-edit': attModal(d.emp, d.date); break;
-    case 'att-clear': MODAL.clearAtt && MODAL.clearAtt(); break;
-    case 'emp-new': empModal(); break;
-    case 'emp-edit': empModal(d.id); break;
-    case 'emp-del': { const e = S.employees[d.id]; confirmModal('Padam rekod pekerja?', `Rekod <b>${esc(e?.name)}</b> akan dipadam. Rekod kehadiran dan cuti lama kekal tetapi tidak lagi bernama. Jika pekerja telah berhenti, lebih baik tukar status kepada <b>Berhenti</b>.`, 'Padam', () => run(remove('employees', d.id), 'Rekod dipadam')); break; }
-    case 'leave-new': leaveModal(); break;
+    case 'leave-filter': UI.leaveFilter = d.f; render(); break;
+    case 'leave-new': if (emps().length) leaveModal(); else toast('Tambah pekerja dahulu.'); break;
     case 'leave-edit': leaveModal(d.id); break;
     case 'leave-del': confirmModal('Padam permohonan cuti?', 'Permohonan ini akan dibuang dan baki cuti dikira semula.', 'Padam', () => run(remove('leaves', d.id), 'Permohonan dipadam')); break;
-    case 'leave-decide': { const l = clone(S.leaves[d.id]); delete l.id; l.status = d.s; l.decidedAt = new Date().toISOString(); run(put('leaves', d.id, l), d.s === 'Diluluskan' ? 'Cuti diluluskan' : 'Cuti ditolak'); break; }
-    case 'leave-filter': UI.leaveFilter = d.f; render(); break;
-    case 'slip': slipModal(d.emp); break;
-    case 'slip-dl': { const l = payLines(UI.payMonth).find(x => x.empId === d.emp); if (!l) break; const css = [...document.querySelectorAll('style')].map(s => s.textContent).join('\n'); saveFile(`slip-gaji-${l.emp?.staffNo || ''}-${UI.payMonth}.html`, `<!doctype html><html lang="ms"><head><meta charset="utf-8"><title>Slip gaji ${esc(l.emp?.name)} ${fmtMonth(UI.payMonth)}</title><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&family=IBM+Plex+Mono&display=swap"><style>${css} body{padding:24px;max-width:760px;margin:auto}</style></head><body>${slipHTML(l, l.emp || {}, UI.payMonth)}</body></html>`); break; }
-    case 'pay-final': {
-      const ym = UI.payMonth, lines = {}; payLines(ym).forEach(l => { const { emp, ...rest } = l; lines[l.empId] = { ...rest, emp: { name: emp?.name, staffNo: emp?.staffNo, ic: emp?.ic || '', position: emp?.position || '', bank: emp?.bank || '', bankAcc: emp?.bankAcc || '', epfNo: emp?.epfNo || '' } }; });
-      const doc = clone(S.payroll[ym] || { month: ym, inputs: {} }); delete doc.id;
-      confirmModal('Muktamadkan gaji ' + fmtMonth(ym) + '?', 'Angka gaji akan dikunci. Perubahan gaji pekerja atau cuti selepas ini tidak akan mengubah bulan ini kecuali anda membukanya semula.', 'Muktamadkan', () => run(put('payroll', ym, { ...doc, month: ym, status: 'Muktamad', lines, finalizedAt: new Date().toISOString() }), 'Gaji dimuktamadkan'));
-      break;
-    }
-    case 'pay-reopen': { const ym = UI.payMonth, doc = clone(S.payroll[ym]); delete doc.id; delete doc.lines; doc.status = 'Draf'; run(put('payroll', ym, doc), 'Gaji dibuka semula sebagai draf'); break; }
-    case 'export-att': exportAttendance(); break;
-    case 'export-pay': exportPayroll(); break;
+    case 'leave-decide': { const l = strip(S.leaves[d.id]); l.status = d.s; l.decidedAt = new Date().toISOString(); run(put('leaves', d.id, l), d.s === 'Diluluskan' ? 'Cuti diluluskan' : 'Cuti ditolak'); break; }
+    case 'emp-new': empModal(); break;
+    case 'emp-edit': empModal(d.id); break;
+    case 'emp-del': confirmModal('Padam rekod pekerja?', `Rekod <b>${esc(S.employees[d.id]?.name)}</b> akan dipadam. Jika pekerja sudah berhenti, lebih baik tukar status kepada <b>Berhenti</b> supaya sejarah cuti dan amaran kekal.`, 'Padam', () => run(remove('employees', d.id), 'Rekod dipadam')); break;
+    case 'pos-new': posModal(); break;
+    case 'pos-edit': posModal(d.id); break;
+    case 'pos-del': confirmModal('Padam jawatan?', 'Jawatan ini akan dibuang.', 'Padam', () => run(remove('positions', d.id), 'Jawatan dipadam')); break;
+    case 'warn-new': warnModal({ empId: d.emp, key: d.key, reason: d.reason }); break;
+    case 'warn-edit': warnModal({ id: d.id }); break;
+    case 'warn-del': confirmModal('Padam rekod amaran?', 'Rekod amaran ini akan dibuang. Jika pencetusnya masih berlaku, ia akan muncul semula dalam senarai.', 'Padam', () => run(remove('warnings', d.id), 'Amaran dipadam')); break;
     case 'hol-del': { const s = clone(S.settings); s.holidays = (s.holidays || []).filter(h => h.date !== d.d); run(putSettings(s), 'Cuti umum dibuang'); break; }
+    case 'mark': {
+      const e = empById(d.emp), c = dayCell(e, d.d), cur = S.kehadiran[d.d.slice(0, 7)]?.marks?.[d.emp]?.[d.d.slice(8)] || '';
+      const next = c.rest ? (cur === 'HK' ? '' : 'HK') : ({ '': 'TH', TH: 'H2', H2: '' }[cur] ?? '');
+      run(putMark(d.d.slice(0, 7), d.emp, d.d.slice(8), next)); break;
+    }
+    case 'export-att': exportAttendance(); break;
     case 'load-sample': loadSample(); break;
-    case 'clear-sample': confirmModal('Buang data contoh?', 'Semua pekerja bertanda CONTOH serta rekod kehadiran, cuti dan gaji mereka akan dibuang. Data sebenar anda tidak disentuh.', 'Buang', clearSample); break;
+    case 'clear-sample': confirmModal('Buang data contoh?', 'Semua jawatan dan pekerja bertanda CONTOH serta cuti, target dan amaran mereka akan dibuang. Data sebenar anda tidak disentuh.', 'Buang', clearSample); break;
   }
 });
 document.addEventListener('change', ev => {
   const t = ev.target;
-  if (t.id === 'attDate' && t.value) { UI.date = t.value; render(); }
-  else if (t.id === 'attMonth' && t.value) { UI.month = t.value; render(); }
-  else if (t.id === 'payMonth' && t.value) { UI.payMonth = t.value; render(); }
-  else if (t.id === 'showInactive') { UI.showInactive = t.checked; render(); }
-  else if (t.classList.contains('pay-in')) {
-    const ym = UI.payMonth, doc = clone(S.payroll[ym] || { month: ym, status: 'Draf', inputs: {} }); delete doc.id;
-    doc.inputs = doc.inputs || {}; doc.inputs[t.dataset.emp] = { ...(doc.inputs[t.dataset.emp] || {}), [t.dataset.k]: Number(t.value) || 0 };
-    doc.status = doc.status || 'Draf';
-    run(put('payroll', ym, doc));
+  if (t.id === 'tgtMonth' && t.value) { UI.month = t.value; render(); }
+  else if (t.classList.contains('tgt-in')) {
+    const v = t.value === '' ? '' : Number(t.value);
+    const en = { ...(S.targets[UI.month]?.entries?.[t.dataset.emp] || {}), [t.dataset.k]: v };
+    run(putTarget(UI.month, t.dataset.emp, en));
   }
 });
 document.addEventListener('input', ev => { if (ev.target.id === 'empSearch') { UI.q = ev.target.value; render(); } });
 document.addEventListener('submit', ev => {
   if (ev.target.id === 'settingsForm') {
     ev.preventDefault(); const f = new FormData(ev.target);
-    const s = { ...clone(S.settings), company: String(f.get('company')).trim(), start: f.get('start'), end: f.get('end'), grace: Number(f.get('grace')) || 0, elDays: Number(f.get('elDays')) || 0, workdays: f.getAll('wd').map(Number) };
+    const s = { ...clone(S.settings), company: String(f.get('company')).trim(), workdays: f.getAll('wd').map(Number) };
+    ['lowBal', 'targetMin', 'missStreak', 'noticeDays', 'pendingDays'].forEach(k => s[k] = Number(f.get(k)) || 0);
     if (!s.workdays.length) { toast('Pilih sekurang-kurangnya satu hari bekerja.'); return; }
     run(putSettings(s), 'Tetapan disimpan');
   } else if (ev.target.id === 'holForm') {
@@ -961,10 +936,8 @@ document.addEventListener('submit', ev => {
   }
 });
 document.addEventListener('keydown', ev => { if (ev.key === 'Escape' && $('#modalRoot').innerHTML) closeModal(); });
-setInterval(() => { const c = $('#liveClock'); if (c) c.textContent = nowHM(); }, 5000);
-setInterval(() => { if (!$('#modalRoot').innerHTML && document.activeElement?.tagName !== 'INPUT') { const t = today(); if (UI.date !== t && UI._lastToday === UI.date) UI.date = t; UI._lastToday = t; scheduleRender(); } }, 60000);
-UI._lastToday = today();
 
+window.__buildSample = buildSample;
 render();
 initStore();
 })();
